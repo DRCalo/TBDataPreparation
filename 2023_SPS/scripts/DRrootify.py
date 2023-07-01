@@ -25,7 +25,6 @@ class DRrootify:
     def __init__(self):
         '''Class Constructor'''
         self.drf = None
-        self.drfile = TFile(".root","RECREATE")
         self.tbtree = TTree("CERNSPS2023","CERNSPS2023")
         self.EventNumber = array('i',[0])
         self.EventSpill = array('i',[0])
@@ -90,7 +89,7 @@ class DRrootify:
     
     def Write(self):
         self.tbtree.Write()
-        self.drfile.Close()
+
 
     def Open(self,fname):
         self.drf = open(fname,'r')
@@ -165,10 +164,12 @@ def main():
         print( "--->"+str(fl)+".bz2 decompressed")
         fname = fl[0:-4] # remove .txt in the name
         dr = DRrootify()
+        out_root = ROOT.TFile(fname + '.root')
         dr.Open(datapath+'/' +fname)
         if not dr.ReadandRoot():
             print ("Problems in rootifying " + datapath + '/' + fname) 
         dr.Write()
+        out_root.Close()
         os.system("rm "+datapath+'/' + fl) # remove decompressed txt files
         os.system("mv "+datapath+ '/' + str(fl[0:-4])+".root "+ntuplepath + '/') # move output ntuple to output dir
     else:

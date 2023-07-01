@@ -12,13 +12,9 @@ import bz2
 import subprocess
 
 ####### Hard coded information - change as you want
-#SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawData"
-#DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawDataDreamDaq"
-#MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/mergedNtuple"
-
-SiPMFileDir="/afs/cern.ch/user/i/ideadr/devel/test_data/rawData"
-DaqFileDir="/afs/cern.ch/user/i/ideadr/devel/test_data/rawDataDreamDaq"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/devel/test_data/mergedNtuple"
+SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawData"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawDataDreamDaq"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/mergedNtuple"
 
 outputFileNamePrefix='merged_sps2023'
 SiPMTreeName = "SiPMData"
@@ -262,23 +258,27 @@ def doRun(runnumber,outfilename):
     inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + "_list.dat"
     tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + "_list.root"
 
+    #### Check files exist and they have a  size
+
+    if not FileCheck(inputSiPMFileName):
+        return False
+    if not FileCheck(inputDaqFileName):
+        return False
+
     print ('Running dataconverter on ' + inputSiPMFileName)
 
-    if os.path.isfile(inputSiPMFileName):
-        p = subprocess.Popen(["dataconverter", inputSiPMFileName])
-        p.wait()
-    else:
-        print('ERROR! File ' + inputSiPMFileName + ' not found')
+    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
+    p.wait()
+    if p.returncode < 0: 
+        print("dataconverter failed with exit code " + strp.returncode)
         return False
 
     # returning trees from temporary SiPM ntuple file
 
-    t_SiPMRootFile = None
-    try:
-        t_SiPMRootFile = ROOT.TFile(tmpSiPMRootFile)
-    except:
-        print('ERROR! File ' + tmpSiPMRootFile + ' not created')
+    if not FileCheck(tmpSiPMRootFile):
         return False
+
+    t_SiPMRootFile = ROOT.TFile(tmpSiPMRootFile)
 
     SiPMTree = t_SiPMRootFile.Get(SiPMTreeName)
     EventInfoTree = t_SiPMRootFile.Get(EventInfoTreeName)
@@ -302,8 +302,13 @@ def doRun(runnumber,outfilename):
         return False
 
     ##### and now merge
+    retval = CreateBlendedFile(SiPMTree,EventInfoTree,DreamDaq_rootifier.tbtree,outfilename)
+    t_SiPMRootFile.Close()
 
-    return CreateBlendedFile(SiPMTree,EventInfoTree,DreamDaq_rootifier.tbtree,outfilename)
+    if os.path.isfile(tmpSiPMRootFile):
+        os.remove(tmpSiPMRootFile)
+    
+    return retval 
     
 
 def GetNewRuns():
@@ -338,8 +343,17 @@ def GetNewRuns():
         if runnum in daq_run_list:
             cand_tomerge.add(runnum)
         else: 
-            print('Run ' + str(runum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
+            print('Run ' + str(runnum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
     tobemerged = cand_tomerge - already_merged
+
+    exclude_list = set()
+    if (os.path.isfile('exclude_runs.csv')):
+        exclude_file = open('exclude_runs.csv')
+        for line in exclude_file.readlines():
+            for item in line.split(','):
+                exclude_list.add(item)
+
+    tobemerged = tobemerged - exclude_list
 
     if (len(tobemerged) == 0):
         print("No new run to be analysed") 
@@ -350,17 +364,26 @@ def GetNewRuns():
     return sorted(tobemerged)
 
 
+def FileCheck(filename):
+    if not os.path.isfile(filename):
+        print('ERROR! File ' + filename + ' not found')
+        return False
+    elif os.stat(filename).st_size == 0:
+        print('Empty file ' + filename)
+        return False
+    return True
+    
 
 ###############################################################
         
 def main():
     import argparse                                                                      
     parser = argparse.ArgumentParser(description='This script runs the merging of the "SiPM" and the "Daq" daq events. \
-        The option --newFiles should be used only in TB mode, has the priority on anything else, \
-        and tries to guess which new files are there and merge them. \n \
-        Otherwise, the user needs to provide --runNumber to run on an individual run. \
-        --runNumber has priority if both sets of options are provided. \
-        --runNumber will assume the lxplus default test beam file location.')
+    The option --newFiles should be used only in TB mode, has the priority on anything else, \
+    and tries to guess which new files are there and merge them. \n \
+    Otherwise, the user needs to provide --runNumber to run on an individual run. \
+    If a file names exclude_runs.csv containing a comma-separated list of run numbers is in the current directory, those runs will be skipped.\n \
+    The script will produce a bad_run_list.csv file containing teh list of runs where the rootification failed.')
     parser.add_argument('--output', dest='outputFileName',default='output.root',help='Output file name')
     parser.add_argument('--no_merge', dest='no_merge',action='store_true',help='Do not do the merging step')           
     parser.add_argument('--runNumber',dest='runNumber',default='0', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root ')
@@ -372,12 +395,18 @@ def main():
 
     if par.newFiles:
         ##### build runnumber list
+        bad_run_file = open('bad_run_list.csv','w')
+        bad_run_list = set()
         rn_list = GetNewRuns()
         for runNumber in rn_list:
             if par.outputFileName == 'output.root':
                 outfilename = MergedFileDir + '/' + outputFileNamePrefix + '_run' + str(runNumber) + '.root'
             print( '\n\nGoing to merge run ' + runNumber + ' and the output file will be ' + outfilename + '\n\n'  )
             allgood = doRun(runNumber, outfilename)
+            if not allgood: 
+                bad_run_list.add(runNumber)
+        for run in bad_run_list:
+            bad_run_file.write(run + ',')
         return 
 
     allGood = 0
@@ -386,17 +415,6 @@ def main():
         print( 'Looking for run number ' + par.runNumber)
         outfilename = par.outputFileName 
         allGood = doRun(par.runNumber,outfilename)
-    else: 
-        if par.inputSiPM != '0' and par.inputDaq != '0':
-            print( 'Running on files ' + par.inputSiPM + ' and ' +  par.inputDaq)
-            start = time.time()
-            allGood = CreateBlendedFile(par.inputSiPM,par.inputDaq,par.outputFileName)
-            end = time.time()
-            print( 'Execution time ' + str(end-start))
-        else:
-            print( 'You need to provide either --inputSiPM and --inputDaq, or --runNumber. Exiting graciously.....')
-            parser.print_help()
-            return 
 
     if allGood != 0:
         print( 'Something went wrong. Please double check your options. If you are absolutely sure that the script should have worked, contact iacopo.vivarelli AT cern.ch')
