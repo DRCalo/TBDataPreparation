@@ -307,6 +307,8 @@ def doRun(runnumber,outfilename):
 
     if os.path.isfile(tmpSiPMRootFile):
         os.remove(tmpSiPMRootFile)
+    if os.path.isfile("temp.root"):
+        os.remove("temp.root")
     
     return retval 
     
