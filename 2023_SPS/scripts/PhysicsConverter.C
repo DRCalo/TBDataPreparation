@@ -61,7 +61,7 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   //
   int EventID;
   PMTtree->SetBranchAddress("EventNumber",&EventID);
-  int ADCs[96];
+  int ADCs[64];
   PMTtree->SetBranchAddress("ADCs",&ADCs);
   SiPMtree->SetBranchAddress("HG_Board0",&ev->SiPMHighGain[0]);
   SiPMtree->SetBranchAddress("HG_Board1",&ev->SiPMHighGain[64]);
