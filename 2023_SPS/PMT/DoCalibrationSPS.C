@@ -16,9 +16,9 @@
 using json = nlohmann::json;
 ClassImp(EventOut)
 
-#define DATADIR  "/eos/user/i/ideadr/TB2023_H8/CERNDATA/mergedNtuple/"
+#define DATADIR  "/eos/user/i/ideadr/TB2023_H8/mergedNtuple/"
 //#define OUTDIR "/afs/cern.ch/user/j/jagarwal/workspace/public/emsizedPT/DREMTubes/TBDataPreparation/202108_SPS/PMT/textfiles/calibV1.3.5/"
-#define OUTDIR "/afs/cern.ch/work/c/caiy/public/FCC/exampleSamples/calibV1.3.5"
+#define OUTDIR "/afs/cern.ch/user/i/ideadr/lorenzotest/"
 
 void DoCalibrationSPS(){
 
@@ -28,7 +28,7 @@ void DoCalibrationSPS(){
 	int mych[16]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 
 	std:vector<int> runs;
-	runs={670,660,662,663,668,664,667,666,665}; //beam shot at tower0,...,tower8
+	runs={150,156,155,154,157,153,158,151,152}; //beam shot at tower0,...,tower8
 	
 	cout<<"run series starting with " <<runs[0] << endl; 
 
@@ -60,6 +60,7 @@ void DoCalibrationSPS(){
 	cout << " equalization .... " << endl; 
 
 	// loop on towers to get all ped and S and C peaks
+	//for(int tow=1; tow<9; tow++){ 
 	for(int tow=1; tow<9; tow++){ 
 
 		// index for ADC channels	
@@ -67,6 +68,7 @@ void DoCalibrationSPS(){
 		s_idx= mych[tow+7];
 
 		myAdc = peakFinder (tow, runs[tow], s_idx, c_idx,  ped.str());	
+                cout<<"pedestals: "<<myAdc.at(0)<<" "<<myAdc.at(1)<<" peaks "<<myAdc.at(2)<<" "<<myAdc.at(3)<<endl;
 		ped_s.push_back(myAdc.at(0));
 		ped_c.push_back(myAdc.at(1));
 		myAdc_s.push_back(myAdc.at(2));
@@ -77,11 +79,11 @@ void DoCalibrationSPS(){
 	// using data file for T0, of which run number is runs[0]
 	TFile *f;
 	ostringstream infile;
-	infile <<  DATADIR <<  "merged_sps2021_run" << std::to_string(runs[0]) << ".root";
+	infile <<  DATADIR <<  "merged_sps2023_run" << std::to_string(runs[0]) << ".root";
 	std::cout<<"Using file: "<<infile.str()<<std::endl;
 	f=new TFile(infile.str().c_str());
-	TTree *t = (TTree*) f->Get("CERNSPS2021");
-	TTree *tSIPM = (TTree*) f->Get("SiPMSPS2021");
+	TTree *t = (TTree*) f->Get("CERNSPS2023");
+	TTree *tSIPM = (TTree*) f->Get("SiPMSPS2023");
 	cout <<"T0: tPMT entries  "<< t->GetEntries()<< "  T0: tSIPM entries " << tSIPM->GetEntries() << endl;
 
 	// using SiPM Calibration from Class Event
@@ -89,8 +91,7 @@ void DoCalibrationSPS(){
 	auto evout = new EventOut();
 
 	// Load SiPM equalisation Calibration file
-	//SiPMCalibration sipmCalibration("RunXXX.json");
-	SiPMCalibration sipmCalibration("RunXXXcalib_v1.3.5.json");
+        SiPMCalibration sipmCalibration("RunXXXcalib.json");
 
 	// Read SiPM branches
 	tSIPM->SetBranchAddress("HG_Board0",&ev->SiPMHighGain[0]);
@@ -105,8 +106,7 @@ void DoCalibrationSPS(){
 	tSIPM->SetBranchAddress("LG_Board4",&ev->SiPMLowGain[256]);
 
 	// Read PMT branches
-	//int ADC[32];
-	int ADC[96];
+	int ADC[64];
 	Long64_t TriggerMask =0;
 	t->SetBranchAddress("ADCs",&ADC);
 	t->SetBranchAddress("TriggerMask",&TriggerMask);
@@ -129,22 +129,25 @@ void DoCalibrationSPS(){
 		t->GetEntry(i);
 
 		int ps=16;
-		int c1=64;
-		int c2=65;
-		float pd = 210;
-		float pd1 = 78.5;
-		float pd2 = 15.8;
+		int c1=33;
+		int c2=36;
+                int c3=35;
+		float pd = 380;
+		float pd1 = 130.;
+		float pd2 = 45.;
+                float pd3 = 59.;
 		double Ch1=ADC[c1]-pd1;
 		double Ch2=ADC[c2]-pd2;
+                double Ch3=ADC[c3]-pd3;
 		double PSP=ADC[ps]-pd;
-		double MIP=60.;
-		double pscut_4point5mip=4.5*MIP;
-		bool pscut=PSP>pscut_4point5mip;
-		bool chercut_loose = (Ch1>2 || Ch2 >10);
-		bool chercut_tight = (Ch1>5 || Ch2 >18); // event selection: tight cuts on both Cherenkov counters
+		//double MIP=640.;
+		double pscutvalue=1000.-pd;
+		bool pscut=PSP>pscutvalue;
+		//bool chercut_loose = (Ch1>2 || Ch2 >10);
+		bool chercut_tight = (Ch1>26 || Ch2>10 || Ch3>11); // event selection: tight cuts on both Cherenkov counters
 		// Calibration of SiPM
 		ev->calibrate(sipmCalibration, evout);
-		if (i%50000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl; 
+		if (i%5000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl; 
 
 		// Sum of calibrated SiPM energy deposition
 		if(TriggerMask == 5){   // phys histo 
@@ -243,19 +246,22 @@ void DoCalibrationSPS(){
 		t->GetEntry(i);
 
 		int ps=16;
-		int c1=64;
-		int c2=65;
-		float pd = 210;
-		float pd1 = 78.5;
-		float pd2 = 15.8;
+		int c1=33;
+		int c2=36;
+                int c3=35;
+		float pd = 380;
+		float pd1 = 130.;
+		float pd2 = 45.;
+                float pd3 = 59.;
 		double Ch1=ADC[c1]-pd1;
 		double Ch2=ADC[c2]-pd2;
+                double Ch3=ADC[c3]-pd3;
 		double PSP=ADC[ps]-pd;
-		double MIP=60.;
-		double pscut_4point5mip=4.5*MIP;
-		bool pscut=PSP>pscut_4point5mip;
-		bool chercut_loose = (Ch1>2 || Ch2 >10);
-		bool chercut_tight = (Ch1>5 || Ch2 >18);
+		//double MIP=640.;
+		double pscutvalue=1000.-pd;
+		bool pscut=PSP>pscutvalue;
+		//bool chercut_loose = (Ch1>2 || Ch2 >10);
+		bool chercut_tight = (Ch1>26 || Ch2>10 || Ch3>11); // event selection: tight cuts on both Cherenkov counters
 
 		// Sum of calibrated SiPM energy deposition
 		if(TriggerMask==5){   // physics trigger 
@@ -281,7 +287,7 @@ void DoCalibrationSPS(){
 				// Calibration of SiPM
 				ev->calibrate(sipmCalibration, evout);
 				//if (i%50000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl; 
-				if (i%50000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl;
+				if (i%5000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl;
 				sums+= evout->totSiPMSene;
 				sumc+= evout->totSiPMCene;
 			}
@@ -455,15 +461,15 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 
 	//input file
 	ostringstream infile;
-	infile <<  DATADIR <<  "merged_sps2021_run" << std::to_string(runno) << ".root";
+	infile <<  DATADIR <<  "merged_sps2023_run" << std::to_string(runno) << ".root";
 	std::cout<<"Using file: "<<infile.str()<<std::endl;
 	f=new TFile(infile.str().c_str());
-	TTree *t = (TTree*) f->Get("CERNSPS2021");
+	TTree *t = (TTree*) f->Get("CERNSPS2023");
 	cout <<"Inside PeakFinder Method- total Entries: "<< t->GetEntries()<< endl;
 
 
 	//Allocate branch pointer
-	int ADC[96];
+	int ADC[64];
 	Long64_t TriggerMask =0;
 	t->SetBranchAddress("ADCs",&ADC);
 	t->SetBranchAddress("TriggerMask",&TriggerMask);
@@ -474,7 +480,7 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 	int xhigh =4096;
 	int npbin =270;
 	int xplow = 0;
-	int xphigh =350;
+	int xphigh =700;
 
 
 	TH1F *h_adc_S = new TH1F("adc distrib S", "adc_distribS", nbin, xlow,xhigh);
@@ -512,19 +518,24 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 	for( unsigned int i=0; i<t->GetEntries(); i++){
 
 		t->GetEntry(i);
+
 		int ps=16;
-		int c1=64;
-		int c2=65;
-		float pd = 210;
-		float pd1 = 78.5;
-		float pd2 = 15.8;
+		int c1=33;
+		int c2=36;
+                int c3=35;
+		float pd = 380;
+		float pd1 = 130.;
+		float pd2 = 45.;
+                float pd3 = 59.;
 		double Ch1=ADC[c1]-pd1;
 		double Ch2=ADC[c2]-pd2;
+                double Ch3=ADC[c3]-pd3;
 		double PSP=ADC[ps]-pd;
-		double MIP=60.;
-		double pscut_4point5mip=4.5*MIP;
-		bool pscut=PSP>pscut_4point5mip;
-		bool chercut_tight = (Ch1>5 || Ch2 >18);
+		//double MIP=640.;
+		double pscutvalue=1000.-pd;
+		bool pscut=PSP>pscutvalue;
+		//bool chercut_loose = (Ch1>2 || Ch2 >10);
+		bool chercut_tight = (Ch1>26 || Ch2>10 || Ch3>11); // event selection: tight cuts on both Cherenkov counters
 
 		if(TriggerMask == 5){   // physics trigger
 			if(chercut_tight){ // event selection: tights cuts on both Cherenkov counters
