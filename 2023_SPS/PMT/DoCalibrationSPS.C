@@ -17,8 +17,7 @@ using json = nlohmann::json;
 ClassImp(EventOut)
 
 #define DATADIR  "/eos/user/i/ideadr/TB2023_H8/mergedNtuple/"
-//#define OUTDIR "/afs/cern.ch/user/j/jagarwal/workspace/public/emsizedPT/DREMTubes/TBDataPreparation/202108_SPS/PMT/textfiles/calibV1.3.5/"
-#define OUTDIR "/afs/cern.ch/user/i/ideadr/lorenzotest/"
+#define OUTDIR "/afs/cern.ch/user/i/ideadr/"
 
 void DoCalibrationSPS(){
 
