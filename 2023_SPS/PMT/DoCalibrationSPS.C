@@ -16,8 +16,18 @@
 using json = nlohmann::json;
 ClassImp(EventOut)
 
-#define DATADIR  "/eos/user/i/ideadr/TB2023_H8/mergedNtuple/"
-#define OUTDIR "/afs/cern.ch/user/i/ideadr/"
+#define DATADIR  "/eos/user/i/ideadr/TB2023_H8/CERNDATA/v1.0/mergedNtuple/"
+//#define OUTDIR "/afs/cern.ch/user/i/ideadr/"
+#define OUTDIR "/afs/cern.ch/user/g/gaudio/public/Dream/Prototype2020/TB2023/OutDir/"
+
+#define ps 16
+#define c1 33
+#define c2 36
+#define c3 35
+#define pscutvalue 900
+#define c1cutvalue 160
+#define c2cutvalue 90
+ 
 
 void DoCalibrationSPS(){
 
@@ -59,7 +69,6 @@ void DoCalibrationSPS(){
 	cout << " equalization .... " << endl; 
 
 	// loop on towers to get all ped and S and C peaks
-	//for(int tow=1; tow<9; tow++){ 
 	for(int tow=1; tow<9; tow++){ 
 
 		// index for ADC channels	
@@ -88,7 +97,7 @@ void DoCalibrationSPS(){
 	// using SiPM Calibration from Class Event
 	auto ev = new Event();
 	auto evout = new EventOut();
-
+       
 	// Load SiPM equalisation Calibration file
         SiPMCalibration sipmCalibration("RunXXXcalib.json");
 
@@ -110,7 +119,6 @@ void DoCalibrationSPS(){
 	t->SetBranchAddress("ADCs",&ADC);
 	t->SetBranchAddress("TriggerMask",&TriggerMask);
 
-
 	Float_t sumc=0; 
 	Float_t sums=0; 
 
@@ -127,35 +135,25 @@ void DoCalibrationSPS(){
 		tSIPM->GetEntry(i);	
 		t->GetEntry(i);
 
-		int ps=16;
-		int c1=33;
-		int c2=36;
-                int c3=35;
-		float pd = 380;
-		float pd1 = 130.;
-		float pd2 = 45.;
-                float pd3 = 59.;
-		double Ch1=ADC[c1]-pd1;
-		double Ch2=ADC[c2]-pd2;
-                double Ch3=ADC[c3]-pd3;
-		double PSP=ADC[ps]-pd;
-		//double MIP=640.;
-		double pscutvalue=1000.-pd;
-		bool pscut=PSP>pscutvalue;
-		//bool chercut_loose = (Ch1>2 || Ch2 >10);
-		bool chercut_tight = (Ch1>26 || Ch2>10 || Ch3>11); // event selection: tight cuts on both Cherenkov counters
+		double Ch1=ADC[c1];
+		double Ch2=ADC[c2];
+                //double Ch3=ADC[c3];
+		//double PSP=ADC[ps];
+		//bool pscut=PSP>pscutvalue;
+	 	// event selection: tight cuts on both Cherenkov counters
+		bool chercut_tight = (Ch1>c1cutvalue || Ch2>c2cutvalue);
+	
 		// Calibration of SiPM
 		ev->calibrate(sipmCalibration, evout);
 		if (i%5000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl; 
 
 		// Sum of calibrated SiPM energy deposition
 		if(TriggerMask == 5){   // phys histo 
-			//if(pscut && chercut_loose){// lateral leakage for PS>4.5mip
-			if(chercut_tight){// event selection: tight cuts on both Cherenkov counters
-				counter2++;
-				h_SumS_SIPM->Fill(evout->totSiPMSene);
-				h_SumC_SIPM->Fill(evout->totSiPMCene);
-			}
+		   if(chercut_tight){// event selection: tight cuts on both Cherenkov counters
+			counter2++;
+			h_SumS_SIPM->Fill(evout->totSiPMSene);
+			h_SumC_SIPM->Fill(evout->totSiPMCene);
+		   }
 		}// end phys case
 
 
@@ -178,7 +176,7 @@ void DoCalibrationSPS(){
 	double adc_SSIPM = h_SumS_SIPM->GetXaxis()->GetBinCenter(binmaxSSIPM);
 	sipm->cd(2);
 	gPad->SetLogy();
-	h_SumC_SIPM->GetXaxis()->SetRangeUser(100, 1000);
+	h_SumC_SIPM->GetXaxis()->SetRangeUser(100, 6000);
 	h_SumC_SIPM->Draw();
 	int binmaxCSIPM = h_SumC_SIPM->GetMaximumBin();
 	double adc_CSIPM = h_SumC_SIPM->GetXaxis()->GetBinCenter(binmaxCSIPM);
@@ -232,7 +230,7 @@ void DoCalibrationSPS(){
 	}
 	
 	// Histogram stores total energy from M0 SiPM + all tower PMT
-	TH1F *h_SumC = new TH1F("SumC", "SumC", 400, 0, 2000);
+	TH1F *h_SumC = new TH1F("SumC", "SumC", 2000, 0, 8000);
 	h_SumC->GetXaxis()->SetTitle("ADC Counts");
 
 	TH1F *h_SumS = new TH1F("SumS", "SumS", 2000, 0, 8000);
@@ -244,52 +242,41 @@ void DoCalibrationSPS(){
 		tSIPM->GetEntry(i);	
 		t->GetEntry(i);
 
-		int ps=16;
-		int c1=33;
-		int c2=36;
-                int c3=35;
-		float pd = 380;
-		float pd1 = 130.;
-		float pd2 = 45.;
-                float pd3 = 59.;
-		double Ch1=ADC[c1]-pd1;
-		double Ch2=ADC[c2]-pd2;
-                double Ch3=ADC[c3]-pd3;
-		double PSP=ADC[ps]-pd;
-		//double MIP=640.;
-		double pscutvalue=1000.-pd;
-		bool pscut=PSP>pscutvalue;
-		//bool chercut_loose = (Ch1>2 || Ch2 >10);
-		bool chercut_tight = (Ch1>26 || Ch2>10 || Ch3>11); // event selection: tight cuts on both Cherenkov counters
+		double Ch1=ADC[c1];
+		double Ch2=ADC[c2];
+                //double Ch3=ADC[c3];
+		//double PSP=ADC[ps];
+		//bool pscut=PSP>pscutvalue;
+
+		// event selection: tight cuts on both Cherenkov counters
+		bool chercut_tight = (Ch1>c1cutvalue || Ch2>c2cutvalue ); 
 
 		// Sum of calibrated SiPM energy deposition
 		if(TriggerMask==5){   // physics trigger 
-		//if(pscut && chercut_loose){
-			if(chercut_tight){ // event selection: tight cuts on both Cherenkov counters
-				counter3++;
-				for(int tow=1; tow<9; tow++){
+		   if(chercut_tight){ // event selection: tight cuts on both Cherenkov counters
+			counter3++;
+			for(int tow=1; tow<9; tow++){
 
-					// index for ADC channels       
-					c_idx= mych[tow-1];
-					s_idx= mych[tow+7];
+			  // index for ADC channels       
+		          c_idx= mych[tow-1];
+			  s_idx= mych[tow+7];
 
-					// sum up on all the towers (ADC counts)
-					sumc+=(ADC[c_idx]-ped_c.at(tow-1))/eq_c.at(tow-1);
-					sums+=(ADC[s_idx]-ped_s.at(tow-1))/eq_s.at(tow-1);
+			  // sum up on all the towers (ADC counts)
+			  sumc+=(ADC[c_idx]-ped_c.at(tow-1))/eq_c.at(tow-1);
+			  sums+=(ADC[s_idx]-ped_s.at(tow-1))/eq_s.at(tow-1);
 
-					//per tower histo, adc distributiom, ped substracted and equalised
-					h[tow-1]->Fill((ADC[c_idx]-ped_c.at(tow-1))/eq_c.at(tow-1));
-					h[tow+7]->Fill((ADC[s_idx]-ped_s.at(tow-1))/eq_s.at(tow-1));
+			  //per tower histo, adc distributiom, ped substracted and equalised
+			  h[tow-1]->Fill((ADC[c_idx]-ped_c.at(tow-1))/eq_c.at(tow-1));
+			  h[tow+7]->Fill((ADC[s_idx]-ped_s.at(tow-1))/eq_s.at(tow-1));
 
-				} // end loop on tower
+		       } // end loop on tower
 
-				// Calibration of SiPM
-				ev->calibrate(sipmCalibration, evout);
-				//if (i%50000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl; 
-				if (i%5000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl;
-				sums+= evout->totSiPMSene;
-				sumc+= evout->totSiPMCene;
-			}
+			// Calibration of SiPM
+			ev->calibrate(sipmCalibration, evout);
+			if (i%5000 ==0) cout << i << " " << evout->totSiPMSene << " " << evout->totSiPMCene<< endl;
+			sums+= evout->totSiPMSene;
+			sumc+= evout->totSiPMCene;
+		   }// end electron selection
 		}// end phys case
 
 		h_SumC->Fill(sumc);
@@ -328,7 +315,6 @@ void DoCalibrationSPS(){
 	c_all->cd(5);
 	gPad->SetLogy();
 	hsipmC->Draw(); 	
-	hsipmC->GetXaxis()->SetRangeUser(100, 1000);
 	c_all->cd(6);
 	gPad->SetLogy();
 	h[3]->Draw();
@@ -341,8 +327,6 @@ void DoCalibrationSPS(){
 	c_all->cd(9);
 	gPad->SetLogy();
 	h[0]->Draw();
-	//c_all->SaveAs("C_equalized.pdf");
-	//c_all->SaveAs("C_equalized.png");
 
 	TCanvas *s_all = new TCanvas("s_distrib", "s_distrib", 1000, 700);
 	s_all->Divide(3,3); 
@@ -361,7 +345,6 @@ void DoCalibrationSPS(){
 	s_all->cd(5);
 	gPad->SetLogy();
 	hsipmS->Draw(); 	
-	hsipmS->GetXaxis()->SetRangeUser(100, 6000);
 	s_all->cd(6);
 	gPad->SetLogy();
 	h[11]->Draw();
@@ -374,26 +357,21 @@ void DoCalibrationSPS(){
 	s_all->cd(9);
 	gPad->SetLogy();
 	h[8]->Draw();
-	//s_all->SaveAs("S_equalized.pdf");
-	//s_all->SaveAs("S_equalized.png");
 
 	TCanvas *sum = new TCanvas("sum_distrib", "sum_distrib", 1000, 700);
 	sum->Divide(2,1);
 	sum->cd(1);
 	gPad->SetLogy();
-	h_SumS->GetXaxis()->SetRangeUser(4000, 8000);
+	h_SumS->GetXaxis()->SetRangeUser(200, 8000);
 	h_SumS->Draw();
 	int binmaxS = h_SumS->GetMaximumBin();
 	double E_S = h_SumS->GetXaxis()->GetBinCenter(binmaxS);
 	sum->cd(2);
 	gPad->SetLogy();
-	h_SumC->GetXaxis()->SetRangeUser(400, 2000);
 	h_SumC->Draw();
+	h_SumC->GetXaxis()->SetRangeUser(200, 3000);
 	int binmaxC = h_SumC->GetMaximumBin();
 	double E_C = h_SumC->GetXaxis()->GetBinCenter(binmaxC);
-
-	//sum->SaveAs("Sum-PMT-SiPM.pdf");
-	//sum->SaveAs("Sum-PMT-SiPM.png");
 
 	float Ks, Kc; 
 	std::vector<float> CS;
@@ -474,9 +452,9 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 	t->SetBranchAddress("TriggerMask",&TriggerMask);
 	
 	
-	int nbin =4096;
+	int nbin =1024;
 	int xlow = 0;
-	int xhigh =4096;
+	int xhigh =2048;
 	int npbin =270;
 	int xplow = 0;
 	int xphigh =700;
@@ -488,7 +466,7 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 	TH1F *h_ped_S =new TH1F("ped distrib S", "ped_distribS", npbin, xplow, xphigh);
 	h_ped_S ->GetXaxis()->SetTitle("ADC counts");
 
-	TH1F *h_adc_C =new TH1F("adc distrib C", "adc_distribC", nbin, xlow,xhigh);
+	TH1F *h_adc_C =new TH1F("adc distrib C", "adc_distribC", npbin, xplow,xphigh);
 	h_adc_C ->GetXaxis()->SetTitle("ADC counts");
 
 	TH1F *h_ped_C =new TH1F("ped distrib C", "ped_distribC", npbin, xplow, xphigh);
@@ -498,12 +476,12 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 	//Loop over events for pedestal 
 	for( unsigned int i=0; i<t->GetEntries(); i++){
 	   
-		t->GetEntry(i);
+           t->GetEntry(i);
 	
-		if(TriggerMask == 6){   // pedestal events
-			h_ped_S->Fill(ADC[s_idx]);			
-			h_ped_C->Fill(ADC[c_idx]);			
-		}
+	   if(TriggerMask == 6){   // pedestal events
+		h_ped_S->Fill(ADC[s_idx]);			
+		h_ped_C->Fill(ADC[c_idx]);			
+	   }
 	} // end loop for ped
 
 	Float_t s_ped =  h_ped_S->GetMean();
@@ -518,46 +496,36 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 
 		t->GetEntry(i);
 
-		int ps=16;
-		int c1=33;
-		int c2=36;
-                int c3=35;
-		float pd = 380;
-		float pd1 = 130.;
-		float pd2 = 45.;
-                float pd3 = 59.;
-		double Ch1=ADC[c1]-pd1;
-		double Ch2=ADC[c2]-pd2;
-                double Ch3=ADC[c3]-pd3;
-		double PSP=ADC[ps]-pd;
-		//double MIP=640.;
-		double pscutvalue=1000.-pd;
-		bool pscut=PSP>pscutvalue;
-		//bool chercut_loose = (Ch1>2 || Ch2 >10);
-		bool chercut_tight = (Ch1>26 || Ch2>10 || Ch3>11); // event selection: tight cuts on both Cherenkov counters
+		double Ch1=ADC[c1];
+		double Ch2=ADC[c2];
+                //double Ch3=ADC[c3];
+		//double PSP=ADC[ps];
+		// bool pscut = PSP > pscutvalue;
+		// event selection: tight cuts on both Cherenkov counters
+		bool chercut_tight = (Ch1>c1cutvalue || Ch2 > c2cutvalue); 
 
 		if(TriggerMask == 5){   // physics trigger
-			if(chercut_tight){ // event selection: tights cuts on both Cherenkov counters
-				counter1++;
-				h_adc_S->Fill(ADC[s_idx]-s_ped);
-				h_adc_C->Fill(ADC[c_idx]-c_ped);
-			}
+		    if(chercut_tight){
+			counter1++;
+			h_adc_S->Fill(ADC[s_idx]-s_ped);
+			h_adc_C->Fill(ADC[c_idx]-c_ped);
+		    }
 		}
 	} // end loop on event
 
 	cout<<"counter1:  "<<counter1<<endl;
-	TCanvas *c1=new TCanvas("mytower","mytower",1000, 1000);
-	c1->Divide(2,2);
-	c1->cd(1);
+	TCanvas *c11=new TCanvas("mytower","mytower",1000, 1000);
+	c11->Divide(2,2);
+	c11->cd(1);
 	gPad->SetLogy();
 	h_ped_S->Draw();
-	c1->cd(2);
+	c11->cd(2);
 	gPad->SetLogy();
 	h_ped_C->Draw();
-	c1->cd(3);
+	c11->cd(3);
 	gPad->SetLogy();
 	h_adc_S->Draw();
-	c1->cd(4);
+	c11->cd(4);
 	gPad->SetLogy();
 	h_adc_C->Draw();
 	myadc.push_back(s_ped);
@@ -568,13 +536,11 @@ std::vector<float> peakFinder(int tow, int runno, int s_idx, int c_idx,  string 
 	c10->cd(1);
 	gPad->SetLogy();
 	h_adc_S->Draw();
-	h_adc_S->GetXaxis()->SetRangeUser(400, 2000);//150 changed
 	int binmax1 = h_adc_S->GetMaximumBin();
 	double x_S = h_adc_S->GetXaxis()->GetBinCenter(binmax1);
 	c10->cd(2);
 	gPad->SetLogy();
 	h_adc_C->Draw();
-	h_adc_C->GetXaxis()->SetRangeUser(400, 2000);
 	int binmax2 = h_adc_C->GetMaximumBin();
 	double x_C = h_adc_C->GetXaxis()->GetBinCenter(binmax2);
 	c10->Update();
