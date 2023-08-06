@@ -17,8 +17,7 @@ using json = nlohmann::json;
 ClassImp(EventOut)
 
 #define DATADIR  "/eos/user/i/ideadr/TB2023_H8/CERNDATA/v1.0/mergedNtuple/"
-//#define OUTDIR "/afs/cern.ch/user/i/ideadr/"
-#define OUTDIR "/afs/cern.ch/user/g/gaudio/public/Dream/Prototype2020/TB2023/OutDir/"
+#define OUTDIR "/afs/cern.ch/user/i/ideadr/"
 
 #define ps 16
 #define c1 33
