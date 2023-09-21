@@ -11,6 +11,8 @@
 //
 #include <TTree.h>
 #include <TFile.h>
+#include <TString.h>
+#include <TProfile.h>
 #include <iostream>
 #include <array>
 #include <stdint.h>
@@ -19,6 +21,7 @@
 #include "PhysicsEvent.h"
 #include <string>
 #include <cstring>
+
 
 using json = nlohmann::json;
 
@@ -41,12 +44,11 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   auto *SiPMtree = (TTree*) Mergfile->Get("SiPMSPS2023");
   //Create new tree and Event object
   //
-  auto Outfile = new TFile(coutfile,"RECREATE");
-  auto ftree = new TTree("Ftree","Ftree");
+  TFile Outfile = new TFile(coutfile,"RECREATE");
+  TTree ftree = new TTree("Ftree","Ftree");
   ftree->SetDirectory(Outfile);
-  auto ev = new Event();
-  auto evout = new EventOut();
-  ftree->Branch("Events",evout);
+
+
   //Create calibration objects
   //
   SiPMCalibration sipmCalibration(calFile);
@@ -55,7 +57,10 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
 
   //Check entries in trees
   //
-  std::cout<<"Entries in PMT / SiPM tree "<<PMTtree->GetEntries()<<" / "<<SiPMtree->GetEntries()<<std::endl;
+
+  unsigned int nentries = PMTtree->GetEntries();
+
+  std::cout<<"Entries in PMT / SiPM tree "<< nentries <<" / "<<SiPMtree->GetEntries()<<std::endl;
 
   //Allocate branch pointers
   //
@@ -63,6 +68,59 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   PMTtree->SetBranchAddress("EventNumber",&EventID);
   int ADCs[64];
   PMTtree->SetBranchAddress("ADCs",&ADCs);
+  int TDCsval[48];
+  PMTtree->SetBranchAddress("TDCsval",&TDCsval);
+  Long64_t TriggerMask;
+  PMTtree->SetBranchAddress("TriggerMask",&TriggerMask);
+
+  // Determine the PMT pedestals
+
+  std::vector<TProfile *> h_ped_scin;
+  std::vector<TProfile *> h_ped_cher;
+  
+  // There is a pedestal event every 10 (actually 11) events, and 
+  // we probably want a granularity at the level of 100 events or so. 
+  // Also, we don't have runs much longer than 50k events, so, the number below shoudl be reasonable. 
+
+  unsigned int nbins = (nentries / 100);
+  TString s_ped_scin = "h_ped_scin";
+  TString s_ped_cher = "h_ped_cher";
+
+  for (unsigned int ch = 0; ch < 8; ++ch){
+    h_ped_scin.push_back(new TProfile(s_ped_scin + ch,"",nbins,0.,(Float_t) nentries));
+    h_ped_cher.push_back(new TProfile(s_ped_cher + ch,"",nbins,0.,(Float_t) nentries));
+  }
+
+  // First loop - determined the pedestals
+
+  for (unsigned int i = 0; i < PMTtree->GetEntries(); ++i){
+    PMTtree->GetEntry(i);
+    if (TriggerMask == 6 /* it is a pedestal event */){
+      h_ped_scin[0]->Fill(float(i),float(ADCs[8]));
+      h_ped_scin[1]->Fill(float(i),ADCs[9]);
+      h_ped_scin[2]->Fill(float(i),ADCs[10]);
+      h_ped_scin[3]->Fill(float(i),ADCs[11]);
+      h_ped_scin[4]->Fill(float(i),ADCs[12]);
+      h_ped_scin[5]->Fill(float(i),ADCs[13]);
+      h_ped_scin[6]->Fill(float(i),ADCs[14]);
+      h_ped_scin[7]->Fill(float(i),ADCs[15]);
+      h_ped_cher[0]->Fill(float(i),ADCs[0]);
+      h_ped_cher[1]->Fill(float(i),ADCs[1]);
+      h_ped_cher[2]->Fill(float(i),ADCs[2]);
+      h_ped_cher[3]->Fill(float(i),ADCs[3]);
+      h_ped_cher[4]->Fill(float(i),ADCs[4]);
+      h_ped_cher[5]->Fill(float(i),ADCs[5]);
+      h_ped_cher[6]->Fill(float(i),ADCs[6]);
+      h_ped_cher[7]->Fill(float(i),ADCs[7]);
+    }
+  }
+
+  Event ev = new Event(&h_ped_scin,&h_ped_cher);
+  EventOut  evout = new EventOut();
+  ftree->Branch("Events",evout);
+
+  // Now dealing with the new tree
+
   SiPMtree->SetBranchAddress("HG_Board0",&ev->SiPMHighGain[0]);
   SiPMtree->SetBranchAddress("HG_Board1",&ev->SiPMHighGain[64]);
   SiPMtree->SetBranchAddress("HG_Board2",&ev->SiPMHighGain[128]);
@@ -73,15 +131,16 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   SiPMtree->SetBranchAddress("LG_Board2",&ev->SiPMLowGain[128]);
   SiPMtree->SetBranchAddress("LG_Board3",&ev->SiPMLowGain[192]);
   SiPMtree->SetBranchAddress("LG_Board4",&ev->SiPMLowGain[256]);
-  int TDCsval[48];
-  PMTtree->SetBranchAddress("TDCsval",&TDCsval);
+
+
 
   //Loop over events 
   //
-  for( unsigned int i=0; i<PMTtree->GetEntries(); i++){
+  for( unsigned int i=0; i<PMTtree->GetEntries(); ++i){
     PMTtree->GetEntry(i);
     SiPMtree->GetEntry(i);
     evout->EventID = EventID;
+    evout->TriggerMask = TriggerMask;
 
     //Fill ev data members
     //
@@ -101,6 +160,22 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     ev->CPMT6 = ADCs[5];
     ev->CPMT7 = ADCs[6];
     ev->CPMT8 = ADCs[7];
+    evout->SPMT1_raw = float(ADCs[8]);
+    evout->SPMT2_raw = float(ADCs[9]);
+    evout->SPMT3_raw = float(ADCs[10]);
+    evout->SPMT4_raw = float(ADCs[11]);
+    evout->SPMT5_raw = float(ADCs[12]);
+    evout->SPMT6_raw = float(ADCs[13]);
+    evout->SPMT7_raw = float(ADCs[14]);
+    evout->SPMT8_raw = float(ADCs[15]);
+    evout->CPMT1_raw = float(ADCs[0]);
+    evout->CPMT2_raw = float(ADCs[1]);
+    evout->CPMT3_raw = float(ADCs[2]);
+    evout->CPMT4_raw = float(ADCs[3]);
+    evout->CPMT5_raw = float(ADCs[4]);
+    evout->CPMT6_raw = float(ADCs[5]);
+    evout->CPMT7_raw = float(ADCs[6]);
+    evout->CPMT8_raw = float(ADCs[7]);
     evout->PShower = ADCs[16];
     evout->MCounter = ADCs[32];
     evout->C1 = ADCs[33];
@@ -119,7 +194,7 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     //Calibrate SiPMs and PMTs
     //
     ev->calibrate(sipmCalibration, evout);
-    ev->calibratePMT(pmtCalibration, evout);
+    ev->calibratePMT(pmtCalibration, evout, );
     ev->calibrateDWC(dwcCalibration, evout);
     evout->CompSPMTene();
     evout->CompCPMTene();
@@ -136,6 +211,12 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   //Write and close Outfile
   //
   Mergfile->Close();
+  Outfile->cd();
+  for (unsigned int ch = 0; ch < 8; ++ch){
+    h_ped_scin[ch]->Write();
+    h_ped_cher[ch]->Write();
+  }
+    
   ftree->Write();
   Outfile->Close();
 

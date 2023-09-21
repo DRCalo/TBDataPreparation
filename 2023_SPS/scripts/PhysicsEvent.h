@@ -15,6 +15,8 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 
+#include <TProfile.h> 
+
 #ifndef Event_H
 #define Event_H
 
@@ -82,19 +84,22 @@ class EventOut{
 	    EventOut(){};
 	    ~EventOut(){};
 	    uint32_t EventID;
+	    Long64_t TriggerMask;
 
         float SPMT1, SPMT2, SPMT3, SPMT4, SPMT5, SPMT6, SPMT7, SPMT8;
         float CPMT1, CPMT2, CPMT3, CPMT4, CPMT5, CPMT6, CPMT7, CPMT8;
+        float SPMT1_raw, SPMT2_raw, SPMT3_raw, SPMT4_raw, SPMT5_raw, SPMT6_raw, SPMT7_raw, SPMT8_raw;
+        float CPMT1_raw, CPMT2_raw, CPMT3_raw, CPMT4_raw, CPMT5_raw, CPMT6_raw, CPMT7_raw, CPMT8_raw;
         float SiPMPheC[160] = {0};
         float SiPMPheS[160] = {0};
-	    float totSiPMCene = 0.;
-	    float totSiPMSene = 0.;
-	    int NSiPMZero= 0.;
-	    float SPMTenergy = 0.;
-	    float CPMTenergy = 0.;
-	    float XDWC1,XDWC2,YDWC1,YDWC2;
-	    int PShower, MCounter, C1, C2, C3;
-
+	float totSiPMCene = 0.;
+	float totSiPMSene = 0.;
+	int NSiPMZero= 0.;
+	float SPMTenergy = 0.;
+	float CPMTenergy = 0.;
+	float XDWC1,XDWC2,YDWC1,YDWC2;
+	int PShower, MCounter, C1, C2, C3;
+	
         void CompSPMTene(){SPMTenergy = SPMT1+SPMT2+SPMT3+SPMT4+SPMT5+SPMT6+SPMT7+SPMT8;}
         void CompCPMTene(){CPMTenergy = CPMT1+CPMT2+CPMT3+CPMT4+CPMT5+CPMT6+CPMT7+CPMT8;}
         
@@ -102,44 +107,54 @@ class EventOut{
         int SiPMRow(int index){ return index/16; }
         
         pair<double, double> SiPMSpos(int index){
-            int row = index / 16;
-            int column = index%16;
-            double x = (column-7)*2-1.5;
-            double y = 2.*sq3*(4-row)+sq3/2;
-            return pair<double,double>(x,y);
+	  int row = index / 16;
+	  int column = index%16;
+	  double x = (column-7)*2-1.5;
+	  double y = 2.*sq3*(4-row)+sq3/2;
+	  return pair<double,double>(x,y);
         }
         pair<double, double> SiPMCpos(int index){
-            int row = index / 16;
-            int column = index%16;
-            double x = (column-7)*2-0.5;
-            double y = 2.*sq3*(4-row)+1.5*sq3;
-            return pair<double,double>(x,y);
+	  int row = index / 16;
+	  int column = index%16;
+	  double x = (column-7)*2-0.5;
+	  double y = 2.*sq3*(4-row)+1.5*sq3;
+	  return pair<double,double>(x,y);
         }
 };
 
 
 class Event{
-
-	public:
-		//Constructor and de-constructor
-		//
-		Event(){};
-		~Event(){};
-
-		//Data members
-		//
-		int SPMT1, SPMT2, SPMT3, SPMT4, SPMT5, SPMT6, SPMT7, SPMT8;
-		int CPMT1, CPMT2, CPMT3, CPMT4, CPMT5, CPMT6, CPMT7, CPMT8;
-		int DWC1L, DWC1R, DWC1U, DWC1D, DWC2L, DWC2R, DWC2U, DWC2D;
-
-		UShort_t SiPMHighGain[320]; // Read HG board info from root file
-		UShort_t SiPMLowGain[320]; // Read LG board info from root file
-
-		void calibrate(const SiPMCalibration&, EventOut*);
-		void calibratePMT(const PMTCalibration&, EventOut*);
-		void calibrateDWC(const DWCCalibration&, EventOut*);
-
+ public:
+  //Constructor and de-constructor
+  //
+  Event(std::vector<TProfile *> * h_ped_scin = 0, std::vector<TProfile *> * h_ped_cher = 0 );
+  ~Event(){};
+  
+  //Data members
+  //
+  int SPMT1, SPMT2, SPMT3, SPMT4, SPMT5, SPMT6, SPMT7, SPMT8;
+  int CPMT1, CPMT2, CPMT3, CPMT4, CPMT5, CPMT6, CPMT7, CPMT8;
+  int DWC1L, DWC1R, DWC1U, DWC1D, DWC2L, DWC2R, DWC2U, DWC2D;
+  
+  UShort_t SiPMHighGain[320]; // Read HG board info from root file
+  UShort_t SiPMLowGain[320]; // Read LG board info from root file
+  
+  void calibrate(const SiPMCalibration&, EventOut*);
+  void calibratePMT(const PMTCalibration&, EventOut*, Long64_t entry = -1);
+  void calibrateDWC(const DWCCalibration&, EventOut*);
+  
+ private: 
+  std::vector<TProfile *> * m_h_ped_scin;
+  std::vector<TProfile *> * m_h_ped_cher;
 };
+
+Event::Event(std::vector<TProfile *> * h_ped_scin, std::vector<TProfile *> * h_ped_cher):
+m_h_ped_scin(h_ped_scin), 
+  m_h_ped_cher(h_ped_cher)
+{} 
+
+
+
 
 void Event::calibrate(const SiPMCalibration& calibration, EventOut* evout){
 
@@ -186,27 +201,37 @@ void Event::calibrate(const SiPMCalibration& calibration, EventOut* evout){
 	evout->NSiPMZero=nmiss;
 }
 
-void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout){
+void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
+  
+  if (m_h_ped_scin != 0 && m_h_ped_cher != 0){
+  } else {
+    std::cout << "Trying teh new pedestal subtraction" << std::endl;
+  } 
+    if (entry < 0){
 
-    //PMT calibration
-
-    evout->SPMT1 = (SPMT1-pmtcalibration.PMTSpd[0])/(pmtcalibration.PMTSpk[0]);
-    evout->SPMT2 = (SPMT2-pmtcalibration.PMTSpd[1])/(pmtcalibration.PMTSpk[1]);
-    evout->SPMT3 = (SPMT3-pmtcalibration.PMTSpd[2])/(pmtcalibration.PMTSpk[2]);
-    evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
-    evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
-    evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
-    evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
-    evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
-
-    evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
-    evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
-    evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
-    evout->CPMT4 = (CPMT4-pmtcalibration.PMTCpd[3])/(pmtcalibration.PMTCpk[3]);
-    evout->CPMT5 = (CPMT5-pmtcalibration.PMTCpd[4])/(pmtcalibration.PMTCpk[4]);
-    evout->CPMT6 = (CPMT6-pmtcalibration.PMTCpd[5])/(pmtcalibration.PMTCpk[5]);
-    evout->CPMT7 = (CPMT7-pmtcalibration.PMTCpd[6])/(pmtcalibration.PMTCpk[6]);
-    evout->CPMT8 = (CPMT8-pmtcalibration.PMTCpd[7])/(pmtcalibration.PMTCpk[7]);
+      //PMT calibration
+      
+      evout->SPMT1 = (SPMT1-pmtcalibration.PMTSpd[0])/(pmtcalibration.PMTSpk[0]);
+      evout->SPMT2 = (SPMT2-pmtcalibration.PMTSpd[1])/(pmtcalibration.PMTSpk[1]);
+      evout->SPMT3 = (SPMT3-pmtcalibration.PMTSpd[2])/(pmtcalibration.PMTSpk[2]);
+      evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
+      evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
+      evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
+      evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
+      evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
+      
+      evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
+      evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
+      evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
+      evout->CPMT4 = (CPMT4-pmtcalibration.PMTCpd[3])/(pmtcalibration.PMTCpk[3]);
+      evout->CPMT5 = (CPMT5-pmtcalibration.PMTCpd[4])/(pmtcalibration.PMTCpk[4]);
+      evout->CPMT6 = (CPMT6-pmtcalibration.PMTCpd[5])/(pmtcalibration.PMTCpk[5]);
+      evout->CPMT7 = (CPMT7-pmtcalibration.PMTCpd[6])/(pmtcalibration.PMTCpk[6]);
+      evout->CPMT8 = (CPMT8-pmtcalibration.PMTCpd[7])/(pmtcalibration.PMTCpk[7]);
+    } else {
+      std::cerr << "Entry is positive, but the pedestal histograms are empty!!!!" << std::endl;
+    }
+    
 }
 
 void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
