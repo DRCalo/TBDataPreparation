@@ -59,6 +59,7 @@ struct DWCCalibration{
     std::array<double,4> DWC_sl, DWC_offs;
     std::array<double,1> DWC_tons;
     std::array<double,2> DWC_z;
+    std::array<double,4> DWC_cent;
     DWCCalibration(const std::string&);
 };
 
@@ -69,6 +70,7 @@ DWCCalibration::DWCCalibration(const std::string& fname){
     DWC_sl = jFile["Calibrations"]["DWC"]["DWC_sl"];
     DWC_offs = jFile["Calibrations"]["DWC"]["DWC_offs"];
     DWC_tons = jFile["Calibrations"]["DWC"]["DWC_tons"];
+    DWC_cent = jFile["Calibrations"]["DWC"]["DWC_cent"];
     DWC_z = jFile["Calibrations"]["DWC"]["DWC_z"];
 }
 
@@ -208,14 +210,10 @@ void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout){
 }
 
 void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
-    evout->XDWC1 = (DWC1R-DWC1L)*dwccalibration.DWC_sl[0]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[0];
-    evout->YDWC1 = (DWC1D-DWC1U)*dwccalibration.DWC_sl[1]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[1];
-    evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2];
-    evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3];
-    //evout->XDWC1 = (DWC1R-DWC1L);
-    //evout->YDWC1 = (DWC1D-DWC1U);
-    //evout->XDWC2 = (DWC2R-DWC2L);
-    //evout->YDWC2 = (DWC2D-DWC2U);
+    evout->XDWC1 = (DWC1R-DWC1L)*dwccalibration.DWC_sl[0]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[0]+dwccalibration.DWC_cent[0];
+    evout->YDWC1 = (DWC1D-DWC1U)*dwccalibration.DWC_sl[1]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[1]+dwccalibration.DWC_cent[1];
+    evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2]+dwccalibration.DWC_cent[2];
+    evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
 }
 #endif
 
