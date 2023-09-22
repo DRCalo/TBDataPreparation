@@ -88,8 +88,8 @@ class EventOut{
 
         float SPMT1, SPMT2, SPMT3, SPMT4, SPMT5, SPMT6, SPMT7, SPMT8;
         float CPMT1, CPMT2, CPMT3, CPMT4, CPMT5, CPMT6, CPMT7, CPMT8;
-        float SPMT1_raw, SPMT2_raw, SPMT3_raw, SPMT4_raw, SPMT5_raw, SPMT6_raw, SPMT7_raw, SPMT8_raw;
-        float CPMT1_raw, CPMT2_raw, CPMT3_raw, CPMT4_raw, CPMT5_raw, CPMT6_raw, CPMT7_raw, CPMT8_raw;
+        float SPMT1_adc, SPMT2_adc, SPMT3_adc, SPMT4_adc, SPMT5_adc, SPMT6_adc, SPMT7_adc, SPMT8_adc;
+        float CPMT1_adc, CPMT2_adc, CPMT3_adc, CPMT4_adc, CPMT5_adc, CPMT6_adc, CPMT7_adc, CPMT8_adc;
         float SiPMPheC[160] = {0};
         float SiPMPheS[160] = {0};
 	float totSiPMCene = 0.;
@@ -142,6 +142,8 @@ class Event{
   void calibrate(const SiPMCalibration&, EventOut*);
   void calibratePMT(const PMTCalibration&, EventOut*, Long64_t entry = -1);
   void calibrateDWC(const DWCCalibration&, EventOut*);
+  double getPedestalCher(unsigned int PMTnum, Long64_t entry);
+  double getPedestalScin(unsigned int PMTnum, Long64_t entry);
   
  private: 
   std::vector<TProfile *> * m_h_ped_scin;
@@ -153,7 +155,25 @@ m_h_ped_scin(h_ped_scin),
   m_h_ped_cher(h_ped_cher)
 {} 
 
+double Event::getPedestalCher(unsigned int PMTnum, Long64_t entry)
+{
+  if (PMTnum - 1 < 0){
+    std::cerr << "ERROR! PMTnum cannot be 0. You are expected to count the PMTs from 1 to 8" << std::endl;
+    abort();
+  }
+  double retval = (m_h_ped_cher->at(PMTnum-1))->GetBinContent((m_h_ped_cher->at(PMTnum-1))->FindBin(entry));
+  return retval;
+}
 
+double Event::getPedestalScin(unsigned int PMTnum, Long64_t entry)
+{
+  if (PMTnum - 1 < 0){
+    std::cerr << "ERROR! PMTnum cannot be 0. You are expected to count the PMTs from 1 to 8" << std::endl;
+    abort();
+  }
+  double retval = (m_h_ped_scin->at(PMTnum-1))->GetBinContent((m_h_ped_scin->at(PMTnum-1))->FindBin(entry));
+  return retval;
+}
 
 
 void Event::calibrate(const SiPMCalibration& calibration, EventOut* evout){
@@ -203,35 +223,53 @@ void Event::calibrate(const SiPMCalibration& calibration, EventOut* evout){
 
 void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
   
-  if (m_h_ped_scin != 0 && m_h_ped_cher != 0){
-  } else {
-    std::cout << "Trying teh new pedestal subtraction" << std::endl;
-  } 
-    if (entry < 0){
+  if (entry < 0){
 
-      //PMT calibration
-      
-      evout->SPMT1 = (SPMT1-pmtcalibration.PMTSpd[0])/(pmtcalibration.PMTSpk[0]);
-      evout->SPMT2 = (SPMT2-pmtcalibration.PMTSpd[1])/(pmtcalibration.PMTSpk[1]);
-      evout->SPMT3 = (SPMT3-pmtcalibration.PMTSpd[2])/(pmtcalibration.PMTSpk[2]);
-      evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
-      evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
-      evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
-      evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
-      evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
-      
-      evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
-      evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
-      evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
-      evout->CPMT4 = (CPMT4-pmtcalibration.PMTCpd[3])/(pmtcalibration.PMTCpk[3]);
-      evout->CPMT5 = (CPMT5-pmtcalibration.PMTCpd[4])/(pmtcalibration.PMTCpk[4]);
-      evout->CPMT6 = (CPMT6-pmtcalibration.PMTCpd[5])/(pmtcalibration.PMTCpk[5]);
-      evout->CPMT7 = (CPMT7-pmtcalibration.PMTCpd[6])/(pmtcalibration.PMTCpk[6]);
-      evout->CPMT8 = (CPMT8-pmtcalibration.PMTCpd[7])/(pmtcalibration.PMTCpk[7]);
-    } else {
-      std::cerr << "Entry is positive, but the pedestal histograms are empty!!!!" << std::endl;
-    }
+    //PMT calibration
     
+    evout->SPMT1 = (SPMT1-pmtcalibration.PMTSpd[0])/(pmtcalibration.PMTSpk[0]);
+    evout->SPMT2 = (SPMT2-pmtcalibration.PMTSpd[1])/(pmtcalibration.PMTSpk[1]);
+    evout->SPMT3 = (SPMT3-pmtcalibration.PMTSpd[2])/(pmtcalibration.PMTSpk[2]);
+    evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
+    evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
+    evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
+    evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
+    evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
+    
+    evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
+    evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
+    evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
+    evout->CPMT4 = (CPMT4-pmtcalibration.PMTCpd[3])/(pmtcalibration.PMTCpk[3]);
+    evout->CPMT5 = (CPMT5-pmtcalibration.PMTCpd[4])/(pmtcalibration.PMTCpk[4]);
+    evout->CPMT6 = (CPMT6-pmtcalibration.PMTCpd[5])/(pmtcalibration.PMTCpk[5]);
+    evout->CPMT7 = (CPMT7-pmtcalibration.PMTCpd[6])/(pmtcalibration.PMTCpk[6]);
+    evout->CPMT8 = (CPMT8-pmtcalibration.PMTCpd[7])/(pmtcalibration.PMTCpk[7]);
+  } else {
+    if (m_h_ped_scin != 0 && m_h_ped_cher != 0){
+
+      evout->SPMT1 = (SPMT1-getPedestalScin(1,entry))/(pmtcalibration.PMTSpk[0]);
+      evout->SPMT2 = (SPMT2-getPedestalScin(2,entry))/(pmtcalibration.PMTSpk[1]);
+      evout->SPMT3 = (SPMT3-getPedestalScin(3,entry))/(pmtcalibration.PMTSpk[2]);
+      evout->SPMT4 = (SPMT4-getPedestalScin(4,entry))/(pmtcalibration.PMTSpk[3]);
+      evout->SPMT5 = (SPMT5-getPedestalScin(5,entry))/(pmtcalibration.PMTSpk[4]);
+      evout->SPMT6 = (SPMT6-getPedestalScin(6,entry))/(pmtcalibration.PMTSpk[5]);
+      evout->SPMT7 = (SPMT7-getPedestalScin(7,entry))/(pmtcalibration.PMTSpk[6]);
+      evout->SPMT8 = (SPMT8-getPedestalScin(8,entry))/(pmtcalibration.PMTSpk[7]);
+      
+      evout->CPMT1 = (CPMT1-getPedestalCher(1,entry))/(pmtcalibration.PMTCpk[0]);
+      evout->CPMT2 = (CPMT2-getPedestalCher(2,entry))/(pmtcalibration.PMTCpk[1]);
+      evout->CPMT3 = (CPMT3-getPedestalCher(3,entry))/(pmtcalibration.PMTCpk[2]);
+      evout->CPMT4 = (CPMT4-getPedestalCher(4,entry))/(pmtcalibration.PMTCpk[3]);
+      evout->CPMT5 = (CPMT5-getPedestalCher(5,entry))/(pmtcalibration.PMTCpk[4]);
+      evout->CPMT6 = (CPMT6-getPedestalCher(6,entry))/(pmtcalibration.PMTCpk[5]);
+      evout->CPMT7 = (CPMT7-getPedestalCher(7,entry))/(pmtcalibration.PMTCpk[6]);
+      evout->CPMT8 = (CPMT8-getPedestalCher(8,entry))/(pmtcalibration.PMTCpk[7]);
+      
+    } else { 
+      std::cerr << "ERROR: 'entry' is positive, but the pedestal histograms are empty!!!!" << std::endl;
+      std::cerr << "Refusing to do PMT calibration" << std::endl;
+    }
+  }
 }
 
 void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
@@ -240,6 +278,7 @@ void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
     evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2]+dwccalibration.DWC_cent[2];
     evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
 }
+
 #endif
 
 //**************************************************

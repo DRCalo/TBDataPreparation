@@ -76,9 +76,9 @@ def main():
     for fl in mrgfls:
         cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"\", \""+calFile+"\" )'"
         print(cmnd1)
-        #os.system(cmnd1)
+        os.system(cmnd1)
         cmnd2 = "mv physics_sps2023_run"+fl+".root "+phspath  ### Really careful here!
-        #os.system(cmnd2)
+        os.system(cmnd2)
 
     if not mrgfls:
         print( "No new files found.")

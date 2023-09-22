@@ -44,8 +44,8 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   auto *SiPMtree = (TTree*) Mergfile->Get("SiPMSPS2023");
   //Create new tree and Event object
   //
-  TFile Outfile = new TFile(coutfile,"RECREATE");
-  TTree ftree = new TTree("Ftree","Ftree");
+  TFile * Outfile = new TFile(coutfile,"RECREATE");
+  TTree * ftree = new TTree("Ftree","Ftree");
   ftree->SetDirectory(Outfile);
 
 
@@ -115,8 +115,8 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     }
   }
 
-  Event ev = new Event(&h_ped_scin,&h_ped_cher);
-  EventOut  evout = new EventOut();
+  Event * ev = new Event(&h_ped_scin,&h_ped_cher);
+  EventOut  * evout = new EventOut();
   ftree->Branch("Events",evout);
 
   // Now dealing with the new tree
@@ -160,22 +160,22 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     ev->CPMT6 = ADCs[5];
     ev->CPMT7 = ADCs[6];
     ev->CPMT8 = ADCs[7];
-    evout->SPMT1_raw = float(ADCs[8]);
-    evout->SPMT2_raw = float(ADCs[9]);
-    evout->SPMT3_raw = float(ADCs[10]);
-    evout->SPMT4_raw = float(ADCs[11]);
-    evout->SPMT5_raw = float(ADCs[12]);
-    evout->SPMT6_raw = float(ADCs[13]);
-    evout->SPMT7_raw = float(ADCs[14]);
-    evout->SPMT8_raw = float(ADCs[15]);
-    evout->CPMT1_raw = float(ADCs[0]);
-    evout->CPMT2_raw = float(ADCs[1]);
-    evout->CPMT3_raw = float(ADCs[2]);
-    evout->CPMT4_raw = float(ADCs[3]);
-    evout->CPMT5_raw = float(ADCs[4]);
-    evout->CPMT6_raw = float(ADCs[5]);
-    evout->CPMT7_raw = float(ADCs[6]);
-    evout->CPMT8_raw = float(ADCs[7]);
+    evout->SPMT1_adc = float(ADCs[8]);
+    evout->SPMT2_adc = float(ADCs[9]);
+    evout->SPMT3_adc = float(ADCs[10]);
+    evout->SPMT4_adc = float(ADCs[11]);
+    evout->SPMT5_adc = float(ADCs[12]);
+    evout->SPMT6_adc = float(ADCs[13]);
+    evout->SPMT7_adc = float(ADCs[14]);
+    evout->SPMT8_adc = float(ADCs[15]);
+    evout->CPMT1_adc = float(ADCs[0]);
+    evout->CPMT2_adc = float(ADCs[1]);
+    evout->CPMT3_adc = float(ADCs[2]);
+    evout->CPMT4_adc = float(ADCs[3]);
+    evout->CPMT5_adc = float(ADCs[4]);
+    evout->CPMT6_adc = float(ADCs[5]);
+    evout->CPMT7_adc = float(ADCs[6]);
+    evout->CPMT8_adc = float(ADCs[7]);
     evout->PShower = ADCs[16];
     evout->MCounter = ADCs[32];
     evout->C1 = ADCs[33];
@@ -194,7 +194,7 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     //Calibrate SiPMs and PMTs
     //
     ev->calibrate(sipmCalibration, evout);
-    ev->calibratePMT(pmtCalibration, evout, );
+    ev->calibratePMT(pmtCalibration, evout,i);
     ev->calibrateDWC(dwcCalibration, evout);
     evout->CompSPMTene();
     evout->CompCPMTene();
@@ -212,11 +212,13 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   //
   Mergfile->Close();
   Outfile->cd();
+  Outfile->mkdir("Pedestal_Histograms");
+  Outfile->cd("Pedestal_Histograms");
   for (unsigned int ch = 0; ch < 8; ++ch){
     h_ped_scin[ch]->Write();
     h_ped_cher[ch]->Write();
   }
-    
+  Outfile->cd();  
   ftree->Write();
   Outfile->Close();
 
