@@ -27,7 +27,7 @@ using json = nlohmann::json;
 
 ClassImp(EventOut)
 
-void PhysicsConverter(const string run, const string inputPath, const string calFile ){
+void PhysicsConverter(const string run, const string inputPath, const string calFile){
 
   //Open merged ntuples
   //
@@ -73,23 +73,43 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   Long64_t TriggerMask;
   PMTtree->SetBranchAddress("TriggerMask",&TriggerMask);
 
-  // Determine the PMT pedestals
+  Event * ev = new Event();
+  EventOut  * evout = new EventOut();
+  ftree->Branch("Events",evout);
 
+  // Determine the PMT pedestals
+    
   std::vector<TProfile *> h_ped_scin;
   std::vector<TProfile *> h_ped_cher;
+
+  TProfile * h_ped_PShower = 0; 
+  TProfile * h_ped_MCounter = 0;
+  TProfile * h_ped_C1 = 0;
+  TProfile * h_ped_C2 = 0;
+  TProfile * h_ped_C3 = 0;
+  
   
   // There is a pedestal event every 10 (actually 11) events, and 
   // we probably want a granularity at the level of 100 events or so. 
   // Also, we don't have runs much longer than 50k events, so, the number below shoudl be reasonable. 
-
+  
   unsigned int nbins = (nentries / 100);
   TString s_ped_scin = "h_ped_scin";
   TString s_ped_cher = "h_ped_cher";
-
+  
   for (unsigned int ch = 0; ch < 8; ++ch){
     h_ped_scin.push_back(new TProfile(s_ped_scin + ch,"",nbins,0.,(Float_t) nentries));
     h_ped_cher.push_back(new TProfile(s_ped_cher + ch,"",nbins,0.,(Float_t) nentries));
   }
+
+  ev->m_h_ped_scin = &h_ped_scin;
+  ev->m_h_ped_cher = &h_ped_cher;
+
+  h_ped_PShower = new TProfile("h_ped_PShower","",nbins,0.,(Float_t) nentries);
+  h_ped_MCounter = new TProfile("h_ped_MCounter","",nbins,0.,(Float_t) nentries);
+  h_ped_C1 = new TProfile("h_ped_C1","",nbins,0.,(Float_t) nentries);
+  h_ped_C2 = new TProfile("h_ped_C2","",nbins,0.,(Float_t) nentries);
+  h_ped_C3 = new TProfile("h_ped_C3","",nbins,0.,(Float_t) nentries);
 
   // First loop - determined the pedestals
 
@@ -112,12 +132,15 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
       h_ped_cher[5]->Fill(float(i),ADCs[5]);
       h_ped_cher[6]->Fill(float(i),ADCs[6]);
       h_ped_cher[7]->Fill(float(i),ADCs[7]);
+      h_ped_PShower->Fill(float(i),ADCs[16]);
+      h_ped_MCounter->Fill(float(i),ADCs[32]);
+      h_ped_C1->Fill(float(i),ADCs[33]);
+      h_ped_C2->Fill(float(i),ADCs[36]);
+      h_ped_C3->Fill(float(i),ADCs[35]);
     }
   }
 
-  Event * ev = new Event(&h_ped_scin,&h_ped_cher);
-  EventOut  * evout = new EventOut();
-  ftree->Branch("Events",evout);
+
 
   // Now dealing with the new tree
 
@@ -177,10 +200,16 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     evout->CPMT7_adc = float(ADCs[6]);
     evout->CPMT8_adc = float(ADCs[7]);
     evout->PShower = ADCs[16];
+    evout->PShower_ped = ev->getPedestal(h_ped_PShower,i);
     evout->MCounter = ADCs[32];
+    evout->MCounter_ped = ev->getPedestal(h_ped_MCounter,i);
     evout->C1 = ADCs[33];
+    evout->C1_ped = ev->getPedestal(h_ped_C1,i);
     evout->C2 = ADCs[36];
+    evout->C2_ped = ev->getPedestal(h_ped_C2,i);
     evout->C3 = ADCs[35];
+    evout->C3_ped = ev->getPedestal(h_ped_C3,i);
+   
     //
     ev->DWC1L=TDCsval[0];
     ev->DWC1R=TDCsval[1];
@@ -218,6 +247,11 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     h_ped_scin[ch]->Write();
     h_ped_cher[ch]->Write();
   }
+  h_ped_PShower->Write();
+  h_ped_MCounter->Write();
+  h_ped_C1->Write();
+  h_ped_C2->Write();
+  h_ped_C3->Write();
   Outfile->cd();  
   ftree->Write();
   Outfile->Close();
@@ -225,3 +259,4 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
 }
 
 //**************************************************
+

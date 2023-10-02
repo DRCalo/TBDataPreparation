@@ -99,6 +99,7 @@ class EventOut{
 	float CPMTenergy = 0.;
 	float XDWC1,XDWC2,YDWC1,YDWC2;
 	int PShower, MCounter, C1, C2, C3;
+	float PShower_ped, MCounter_ped, C1_ped, C2_ped, C3_ped;
 	
         void CompSPMTene(){SPMTenergy = SPMT1+SPMT2+SPMT3+SPMT4+SPMT5+SPMT6+SPMT7+SPMT8;}
         void CompCPMTene(){CPMTenergy = CPMT1+CPMT2+CPMT3+CPMT4+CPMT5+CPMT6+CPMT7+CPMT8;}
@@ -127,7 +128,7 @@ class Event{
  public:
   //Constructor and de-constructor
   //
-  Event(std::vector<TProfile *> * h_ped_scin = 0, std::vector<TProfile *> * h_ped_cher = 0 );
+  Event();
   ~Event(){};
   
   //Data members
@@ -144,16 +145,17 @@ class Event{
   void calibrateDWC(const DWCCalibration&, EventOut*);
   double getPedestalCher(unsigned int PMTnum, Long64_t entry);
   double getPedestalScin(unsigned int PMTnum, Long64_t entry);
+  Float_t getPedestal(TProfile * h_ped, Long64_t entry);
   
- private: 
   std::vector<TProfile *> * m_h_ped_scin;
   std::vector<TProfile *> * m_h_ped_cher;
 };
 
-Event::Event(std::vector<TProfile *> * h_ped_scin, std::vector<TProfile *> * h_ped_cher):
-m_h_ped_scin(h_ped_scin), 
-  m_h_ped_cher(h_ped_cher)
-{} 
+Event::Event():
+m_h_ped_scin(0),
+  m_h_ped_cher(0)
+{}
+
 
 double Event::getPedestalCher(unsigned int PMTnum, Long64_t entry)
 {
@@ -161,8 +163,7 @@ double Event::getPedestalCher(unsigned int PMTnum, Long64_t entry)
     std::cerr << "ERROR! PMTnum cannot be 0. You are expected to count the PMTs from 1 to 8" << std::endl;
     abort();
   }
-  double retval = (m_h_ped_cher->at(PMTnum-1))->GetBinContent((m_h_ped_cher->at(PMTnum-1))->FindBin(entry));
-  return retval;
+  return getPedestal(m_h_ped_cher->at(PMTnum-1), entry);
 }
 
 double Event::getPedestalScin(unsigned int PMTnum, Long64_t entry)
@@ -171,10 +172,28 @@ double Event::getPedestalScin(unsigned int PMTnum, Long64_t entry)
     std::cerr << "ERROR! PMTnum cannot be 0. You are expected to count the PMTs from 1 to 8" << std::endl;
     abort();
   }
-  double retval = (m_h_ped_scin->at(PMTnum-1))->GetBinContent((m_h_ped_scin->at(PMTnum-1))->FindBin(entry));
-  return retval;
+  return getPedestal(m_h_ped_scin->at(PMTnum-1), entry);
 }
 
+Float_t Event::getPedestal(TProfile * h_ped, Long64_t entry)
+{
+  bool isProblem = false;
+  Int_t bin = h_ped->FindBin(entry);
+  Float_t binContent = h_ped->GetBinContent(bin);
+  Float_t binError = h_ped->GetBinError(bin);
+
+  if (bin == 0 || bin == h_ped->GetNbinsX() + 1) isProblem = true;
+  if (binContent == 0) isProblem = true;
+  if (binError > 50) isProblem = true; /*large error in terms of ADC counts*/
+
+  if (isProblem) {
+    /* there is a problem. Print an error message and get the mean of the histogram as pedestal */
+    std::cerr << "Pedestal problematic for entry " << entry << ", histogram " << h_ped->GetName() << std::endl;
+    binContent = h_ped->Integral()/((Float_t) h_ped->GetNbinsX());
+  }
+
+  return binContent;
+}
 
 void Event::calibrate(const SiPMCalibration& calibration, EventOut* evout){
 
@@ -278,6 +297,8 @@ void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
     evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2]+dwccalibration.DWC_cent[2];
     evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
 }
+
+
 
 #endif
 
