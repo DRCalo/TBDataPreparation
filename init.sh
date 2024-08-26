@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # copied from @Brian Petersen
 if [ "$0" != "TBDataPreparation/init.sh" ]
 then
@@ -6,8 +7,21 @@ then
     exit 1
 fi
 
+echo $#
+
+if [ $# != 1 ]
+then
+    echo "USAGE: TBDataPreparation/init.sh [TBVER]"
+    echo "where [TBVER] is the version of the test beam to be run"
+    echo "Currently available are 2023_SPS or 2024_SPS"
+    exit 1
+fi
+
+TBVER=$1
+shift 1
+
 #LCGVER=/cvmfs/sw.hsf.org/key4hep/setup.sh
-LCGVER=/cvmfs/sft.cern.ch/lcg/views/LCG_102b/x86_64-centos7-gcc11-opt/setup.sh
+LCGVER=/cvmfs/sft.cern.ch/lcg/views/LCG_106/x86_64-el9-gcc13-opt/setup.sh
 
 source ${LCGVER}
 
@@ -29,7 +43,11 @@ then
     echo "  Moving existing 'setup.sh' to 'setup.sh.old'"
     mv setup.sh setup.sh.old
 fi
+
+
+
 cat <<EOF > setup.sh
+
 #source LCG
 
 source ${LCGVER}
@@ -40,6 +58,6 @@ export IDEADIR=$PWD
 export SamplePath=$PWD
 
 #standard setup
-source $PWD/TBDataPreparation/setup.sh 
+source $PWD/TBDataPreparation/setup.sh ${TBVER}
 
 EOF
