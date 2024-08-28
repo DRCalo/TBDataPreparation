@@ -7,8 +7,6 @@ then
     exit 1
 fi
 
-echo $#
-
 if [ $# != 1 ]
 then
     echo "USAGE: TBDataPreparation/init.sh [TBVER]"

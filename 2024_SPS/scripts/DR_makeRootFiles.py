@@ -72,8 +72,6 @@ def doRun(runnumber,outfilename):
 
     retval = CreateBlendedFile(DreamDaq_rootifier.tbtree,outfilename)
 
-    if os.path.isfile(tmpSiPMRootFile):
-        os.remove(tmpSiPMRootFile)
     if os.path.isfile("temp.root"):
         os.remove("temp.root")
     
@@ -148,7 +146,7 @@ def main():
     The script will produce a bad_run_list.csv file containing the list of runs where the rootification failed.')
     parser.add_argument('--output', dest='outputFileName',default='output.root',help='Output file name')
     parser.add_argument('--runNumber',dest='runNumber',default='0', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root ')
-    parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' DaqFileDir + ', and merges them. To be used ONLY from the ideadr account on lxplus')
+    parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' + DaqFileDir + ', and processes them. To be used ONLY from the ideadr account on lxplus')
     
     par  = parser.parse_args()
 
@@ -174,6 +172,9 @@ def main():
         print( 'Looking for run number ' + par.runNumber)
         outfilename = par.outputFileName 
         allGood = doRun(par.runNumber,outfilename)
+    else:
+        print( 'No options provided, doing nothing')
+        print( 'use option --help to get a list of available options')
 
     if allGood != 0:
         print( 'Something went wrong. Please double check your options. If you are absolutely sure that the script should have worked, contact iacopo.vivarelli AT cern.ch')

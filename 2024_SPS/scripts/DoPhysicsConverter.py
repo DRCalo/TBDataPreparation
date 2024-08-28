@@ -34,13 +34,13 @@ def main():
                         default=False,
                         help='Print more information')
     parser.add_argument('-o','--output_dir', action='store', dest='ntuplepath',
-                        default='/eos/user/i/ideadr/TB2023_H8/recoNtuple/',
+                        default='/eos/user/i/ideadr/TB2024_H8/physicsNtuples/',
                         help='output root file path')
     parser.add_argument('-i','--input_dir', action='store', dest='datapath',
-                        default='/eos/user/i/ideadr/TB2023_H8/mergedNtuple/',
+                        default='/eos/user/i/ideadr/TB2024_H8/outputNtuples/',
                         help='input root file path')
     parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
-                        default='/afs/cern.ch/user/i/ideadr/TB2023/TBDataPreparation/2023_SPS/scripts/RunXXX.json',
+                        default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json',
                         help='calibration file')
     par = parser.parse_args()
     
@@ -71,7 +71,7 @@ def main():
 
 
     calFile=par.calibrationfile
-    macroPath = os.getenv('IDEARepo') + "/2023_SPS/scripts/"
+    macroPath = os.getenv('IDEARepo') + "/2024_SPS/scripts/"
     print(macroPath)
     for fl in mrgfls:
         cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"\", \""+calFile+"\" )'"
