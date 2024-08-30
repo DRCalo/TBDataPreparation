@@ -37,7 +37,7 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   std::cout<<"Using file: "<<infile<<std::endl;
   char cinfile[infile.size() + 1];
   strcpy(cinfile, infile.c_str());
-  string outfile = "physics_sps2023_run"+run+".root"; // Make sure this matches the mv file in DoPhysicsConverter.py
+  string outfile = "physics_sps2022_run"+run+".root"; // Make sure this matches the mv file in DoPhysicsConverter.py
   char coutfile[outfile.size() + 1];
   strcpy(coutfile, outfile.c_str());
 
