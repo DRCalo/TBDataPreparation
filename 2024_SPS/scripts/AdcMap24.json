@@ -438,32 +438,122 @@
         "pedestal": 0
     },
     "TailC": {
-        "addr": 97,
+        "addr": 96,
         "module": "TileC",
         "ringId": -1,
         "pedestal": 0
     },
     "MuonT": {
-        "addr": 98,
+        "addr": 97,
         "module": "MuonT",
         "ringId": -1,
         "pedestal": 0
     },
     "Cher1": {
-        "addr": 99,
+        "addr": 101,
         "module": "Cher1",
         "ringId": -1,
         "pedestal": 0
     },
     "Cher2": {
-        "addr": 100,
+        "addr": 99,
         "module": "Cher2",
         "ringId": -1,
         "pedestal": 0
     },
     "Cher3": {
-        "addr": 101,
+        "addr": 100,
         "module": "Cher3",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L04": {
+        "addr": 114,
+        "module": "Leak04",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L03": {
+        "addr": 113,
+        "module": "Leak03",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L02": {
+        "addr": 112,
+        "module": "Leak02",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L09": {
+        "addr": 118,
+        "module": "Leak09",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L08": {
+        "addr": 117,
+        "module": "Leak08",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L07": {
+        "addr": 116,
+        "module": "Leak07",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L05": {
+        "addr": 115,
+        "module": "Leak05",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L13": {
+        "addr": 122,
+        "module": "Leak13",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L12": {
+        "addr": 121,
+        "module": "Leak12",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L11": {
+        "addr": 120,
+        "module": "Leak11",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L10": {
+        "addr": 119,
+        "module": "Leak10",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L20": {
+        "addr": 126,
+        "module": "Leak20",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L16": {
+        "addr": 125,
+        "module": "Leak16",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L15": {
+        "addr": 124,
+        "module": "Leak15",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L14": {
+        "addr": 123,
+        "module": "Leak14",
         "ringId": -1,
         "pedestal": 0
     }

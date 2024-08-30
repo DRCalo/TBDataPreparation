@@ -28,20 +28,26 @@ def main():
         _type_: _description_
     """
     
-    parser = argparse.ArgumentParser(description='DRrootify - a script to convert the ASCII output of the Auxiliary/PMT DAQ to root files')
+    parser = argparse.ArgumentParser(description='DoPhysicsConverter - a script to produce the final physics ntuples')
 
     parser.add_argument('--debug', action='store_true', dest='debug',
                         default=False,
                         help='Print more information')
+    parser.add_argument('--doCalibration', action='store_true', dest='doCalibration',
+                        default=False,
+                        help='If specified, do calibration using pedestals from the json calibration file')
+    parser.add_argument('--useLocalPedestals', action='store_true', dest='useLocalPedestals',
+                        default=False,
+                        help='If specified, compute pedestals from TriggerMask==6 (see code for details)')
     parser.add_argument('-o','--output_dir', action='store', dest='ntuplepath',
                         default='/eos/user/i/ideadr/TB2024_H8/physicsNtuples/',
-                        help='output root file path')
+                        help='output root file path. Default /eos/user/i/ideadr/TB2024_H8/physicsNtuples/')
     parser.add_argument('-i','--input_dir', action='store', dest='datapath',
                         default='/eos/user/i/ideadr/TB2024_H8/outputNtuples/',
-                        help='input root file path')
+                        help='input root file path. Default /eos/user/i/ideadr/TB2024_H8/outputNtuples/')
     parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
                         default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json',
-                        help='calibration file')
+                        help='calibration file. By default it will use /afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json')
     par = parser.parse_args()
     
     if not os.path.isdir(par.datapath):
@@ -72,12 +78,23 @@ def main():
 
     calFile=par.calibrationfile
     macroPath = os.getenv('IDEARepo') + "/2024_SPS/scripts/"
+
+    # Deal with bool options
+
+    doCalibration = "false"
+    doLocPed = "false"
+
+    if par.doCalibration:
+        doCalibration = "true"
+    if par.useLocalPedestals:
+        doLocPed = "true"
+    
     print(macroPath)
     for fl in mrgfls:
-        cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"\", \""+calFile+"\" )'"
+        cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"\", \""+calFile+"\"," + doCalibration + "," + doLocPed+ ")'"
         print(cmnd1)
         os.system(cmnd1)
-        cmnd2 = "mv physics_sps2023_run"+fl+".root "+phspath  ### Really careful here!
+        cmnd2 = "mv physics_sps2024_run"+fl+".root "+phspath  ### Really careful here!
         os.system(cmnd2)
 
     if not mrgfls:
