@@ -61,9 +61,9 @@ def main():
     #One needs to make assumptions here on the format of the filename. Not the best.....
 
     mrgpath = par.datapath
-    mrgfls = [ returnRunNumber(x) for x in glob.glob(mrgpath+"*.root")]
+    mrgfls = [ returnRunNumber(x) for x in glob.glob(mrgpath+"/*.root")]
     recpath = par.ntuplepath
-    recfls = [ returnRunNumber(x) for x in glob.glob(recpath+"*.root")]
+    recfls = [ returnRunNumber(x) for x in glob.glob(recpath+"/*.root")]
     print(mrgfls)
     print(recfls)
     mrgfls = list(set(mrgfls) - set(recfls))
@@ -91,7 +91,7 @@ def main():
     
     print(macroPath)
     for fl in mrgfls:
-        cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"\", \""+calFile+"\"," + doCalibration + "," + doLocPed+ ")'"
+        cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"/\", \""+calFile+"\"," + doCalibration + "," + doLocPed+ ")'"
         print(cmnd1)
         os.system(cmnd1)
         cmnd2 = "mv physics_sps2024_run"+fl+".root "+phspath  ### Really careful here!

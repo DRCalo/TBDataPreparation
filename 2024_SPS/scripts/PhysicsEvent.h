@@ -82,8 +82,6 @@ public:
   uint32_t EventID;
   Long64_t TriggerMask;
 
-  std::map<TString, float> channelMap;
-  
   float TS55,TS54,TS53;
   float TS45,TS44,TS43;
   float TS35,TS34,TS33;
@@ -434,7 +432,6 @@ void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, 
     for (auto it = this->channel.begin(); it != this->channel.end(); ++it){
       std::string key = it->first;
       this->channel_calibrated[key] = float(this->channel[key]) - this->getPedestalChan(key,entry);
-      evout->channelMap[key]=this->channel_calibrated[key];
     }
     
     evout->PShower_ped = this->getPedestalChan("PreSh",entry);

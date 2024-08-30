@@ -37,7 +37,7 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   std::cout<<"Using file: "<<infile<<std::endl;
   char cinfile[infile.size() + 1];
   strcpy(cinfile, infile.c_str());
-  string outfile = "physics_sps2022_run"+run+".root"; // Make sure this matches the mv file in DoPhysicsConverter.py
+  string outfile = "physics_sps2024_run"+run+".root"; // Make sure this matches the mv file in DoPhysicsConverter.py
   char coutfile[outfile.size() + 1];
   strcpy(coutfile, outfile.c_str());
 
@@ -116,6 +116,9 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   //Loop over events 
   //
   for( unsigned int i=0; i<PMTtree->GetEntries(); ++i){
+
+    if (i%1000 == 0) std::cout << "******** " << i << " events processed " << std::endl; 
+    
     PMTtree->GetEntry(i);
     evout->EventID = EventID;
     evout->TriggerMask = TriggerMask;
