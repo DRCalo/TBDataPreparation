@@ -150,8 +150,10 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
       } else {
 	ev->calibratePMT(pmtCalibration, evout,-1);
       }
-      ev->calibrateDWC(dwcCalibration, evout);
+
     }
+    
+    ev->calibrateDWC(dwcCalibration, evout);
     
     evout->CompRing0S();
     evout->CompRing1S();
@@ -169,15 +171,13 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     evout->CompRing6C();
     evout->CompPMTSene();
     evout->CompPMTCene();
+    evout->CompTotLeakage();
     //std::cout<<ev->EventID<<" "<<ev->totSiPMPheS<<std::endl;
     //Write event in ftree
     //
     ftree->Fill();
     //Reset totSiPMPheC and totSiPMPheS to 0
     //
-    evout->totPMTCene = 0;
-    evout->totPMTSene = 0;
-    
   }
 
   //Write and close Outfile

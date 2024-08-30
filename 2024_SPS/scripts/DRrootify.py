@@ -63,9 +63,14 @@ class DRrootify:
             return False
 
         for i,line in enumerate(self.drf):
-
+            
             if i%5000 == 0 : print( "------>At line "+str(i))
-            evt = DREvent.DRdecode(line) 
+            for ch in range(0,48):
+                self.TDCsval[ch] = -1
+                self.TDCscheck[ch] = -1
+            for ch in range(0,128):
+                self.ADCs[ch] = -1
+            evt = DREvent.DRdecode(line)
             self.EventNumber[0] = evt.EventNumber
             self.EventSpill[0] = evt.SpillNumber
             self.Eventms[0] = int( (evt.EventTime.split("-"))[4] ) #take evt microseconds

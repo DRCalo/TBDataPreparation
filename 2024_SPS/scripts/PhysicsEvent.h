@@ -6,6 +6,7 @@
 //          Edoardo Proserpio (Uni Insubria)
 //          Iacopo Vivarelli (Uni Sussex)
 // \start date: 20 August 2021
+// reviewed in August 2024 by Iacopo Vivarelli 
 //**************************************************
 
 #include <iostream>
@@ -134,6 +135,18 @@ public:
   float TC50_adc,TC51_adc,TC52_adc;
   float TC60_adc,TC61_adc,TC62_adc;
 
+  float L02,L03,L04,L05;
+  float L07,L08,L09,L10;
+  float L11,L12,L13,L14;
+  float L15,L16,L20;
+
+  float L02_ped,L03_ped,L04_ped,L05_ped;
+  float L07_ped,L08_ped,L09_ped,L10_ped;
+  float L11_ped,L12_ped,L13_ped,L14_ped;
+  float L15_ped,L16_ped,L20_ped;
+  
+
+  float totLeakage = 0.;
   float totPMTCene = 0.;
   float totPMTSene = 0.;
   float XDWC1,XDWC2,YDWC1,YDWC2;
@@ -157,9 +170,10 @@ public:
   void CompRing4C(){ene_R4_C = TC40+TC41+TC42+TC43+TC44+TC45;}
   void CompRing5C(){ene_R5_C = TC50+TC51+TC52+TC53+TC54+TC55;}
   void CompRing6C(){ene_R6_C = TC60+TC61+TC62;}
-  
   void CompPMTSene(){totPMTSene = ene_R0_S + ene_R1_S + ene_R2_S + ene_R3_S + ene_R4_S + ene_R5_S + ene_R6_S;}
   void CompPMTCene(){totPMTCene = ene_R0_C + ene_R1_C + ene_R2_C + ene_R3_C + ene_R4_C + ene_R5_C + ene_R6_C;}
+
+  void CompTotLeakage(){totLeakage = L02+L03+L04+L05+L07+L08+L09+L10+L11+L12+L13+L14+L15+L16+L20-L02_ped-L03_ped-L04_ped-L05_ped-L07_ped-L08_ped-L09_ped-L10_ped-L11_ped-L12_ped-L13_ped-L14_ped-L15_ped-L16_ped-L20_ped;}
         
 
 };
@@ -386,12 +400,54 @@ void Event::copyValues(EventOut * evout)
   evout->TC61 = this->channel["TC61"];
   evout->TC62 = this->channel["TC62"];
 
+  evout->L02 = this->channel["L02"];
+  evout->L03 = this->channel["L03"];
+  evout->L04 = this->channel["L04"];
+  evout->L05 = this->channel["L05"];
+  evout->L07 = this->channel["L07"];
+  evout->L08 = this->channel["L08"];
+  evout->L09 = this->channel["L09"];
+  evout->L10 = this->channel["L10"];
+  evout->L11 = this->channel["L11"];
+  evout->L12 = this->channel["L12"];
+  evout->L13 = this->channel["L13"];
+  evout->L14 = this->channel["L14"];
+  evout->L15 = this->channel["L15"];
+  evout->L16 = this->channel["L16"];
+  evout->L20 = this->channel["L20"];
+			        
+
   evout->PShower = this->channel["PreSh"];
   evout->MCounter = this->channel["MuonT"];
   evout->TailC = this->channel["TailC"];
   evout->C1 = this->channel["Cher1"];
   evout->C2 = this->channel["Cher2"];
-  evout->C3 = this->channel["Cher3"];  
+  evout->C3 = this->channel["Cher3"];
+
+  evout->L02_ped = 0;
+  evout->L03_ped = 0;
+  evout->L04_ped = 0;
+  evout->L05_ped = 0;
+  evout->L07_ped = 0;
+  evout->L08_ped = 0;
+  evout->L09_ped = 0;
+  evout->L10_ped = 0;
+  evout->L11_ped = 0;
+  evout->L12_ped = 0;
+  evout->L13_ped = 0;
+  evout->L14_ped = 0;
+  evout->L15_ped = 0;
+  evout->L16_ped = 0;
+  evout->L20_ped = 0;
+			        
+  evout->PShower_ped = 0;
+  evout->MCounter_ped = 0;
+  evout->TailC_ped = 0;
+  evout->C1_ped = 0;
+  evout->C2_ped = 0;
+  evout->C3_ped = 0;
+
+  
 }
 
 void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
@@ -433,6 +489,22 @@ void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, 
       std::string key = it->first;
       this->channel_calibrated[key] = float(this->channel[key]) - this->getPedestalChan(key,entry);
     }
+
+    evout->L02_ped = this->getPedestalChan("L02",entry);
+    evout->L03_ped = this->getPedestalChan("L03",entry);
+    evout->L04_ped = this->getPedestalChan("L04",entry);
+    evout->L05_ped = this->getPedestalChan("L05",entry);
+    evout->L07_ped = this->getPedestalChan("L07",entry);
+    evout->L08_ped = this->getPedestalChan("L08",entry);
+    evout->L09_ped = this->getPedestalChan("L09",entry);
+    evout->L10_ped = this->getPedestalChan("L10",entry);
+    evout->L11_ped = this->getPedestalChan("L11",entry);
+    evout->L12_ped = this->getPedestalChan("L12",entry);
+    evout->L13_ped = this->getPedestalChan("L13",entry);
+    evout->L14_ped = this->getPedestalChan("L14",entry);
+    evout->L15_ped = this->getPedestalChan("L15",entry);
+    evout->L16_ped = this->getPedestalChan("L16",entry);
+    evout->L20_ped = this->getPedestalChan("L20",entry);
     
     evout->PShower_ped = this->getPedestalChan("PreSh",entry);
     evout->MCounter_ped = this->getPedestalChan("MuonT",entry);
@@ -521,10 +593,18 @@ void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, 
 }
 
 void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
+  if (DWC1R != -1 && DWC1L != -1)
     evout->XDWC1 = (DWC1R-DWC1L)*dwccalibration.DWC_sl[0]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[0]+dwccalibration.DWC_cent[0];
+  else evout->XDWC1 = -1.;
+  if (DWC1D != -1 && DWC1U != -1)
     evout->YDWC1 = (DWC1D-DWC1U)*dwccalibration.DWC_sl[1]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[1]+dwccalibration.DWC_cent[1];
+  else evout->YDWC1 = -1.;
+  if (DWC2R != -1 && DWC2L != -1)
     evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2]+dwccalibration.DWC_cent[2];
+  else evout->XDWC2 = -1.;
+  if (DWC2D != -1 && DWC2U != -1)
     evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
+  else evout->YDWC2 = -1.;
 }
 
 
