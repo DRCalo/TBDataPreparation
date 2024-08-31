@@ -59,6 +59,11 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   //
   PMTCalibration pmtCalibration(calFile);
   DWCCalibration dwcCalibration(calFile);
+  
+  if (!pmtCalibration.read()){
+    std::cerr << "Cannot parse file " << calFile << std::endl;
+    return;
+  }
 
   AdcMap24 adcMap(adcMapFile);
 

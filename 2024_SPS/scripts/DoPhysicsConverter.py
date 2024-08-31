@@ -28,7 +28,7 @@ def main():
         _type_: _description_
     """
     
-    parser = argparse.ArgumentParser(description='DoPhysicsConverter - a script to produce the final physics ntuples')
+    parser = argparse.ArgumentParser(description='DoPhysicsConverter - a script to produce the final physics ntuples',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--debug', action='store_true', dest='debug',
                         default=False,
@@ -41,13 +41,13 @@ def main():
                         help='If specified, compute pedestals from TriggerMask==6 (see code for details)')
     parser.add_argument('-o','--output_dir', action='store', dest='ntuplepath',
                         default='/eos/user/i/ideadr/TB2024_H8/physicsNtuples/',
-                        help='output root file path. Default /eos/user/i/ideadr/TB2024_H8/physicsNtuples/')
+                        help='output root file path.')
     parser.add_argument('-i','--input_dir', action='store', dest='datapath',
                         default='/eos/user/i/ideadr/TB2024_H8/outputNtuples/',
-                        help='input root file path. Default /eos/user/i/ideadr/TB2024_H8/outputNtuples/')
+                        help='input root file path.')
     parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
-                        default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json',
-                        help='calibration file. By default it will use /afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json')
+                        default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX_2024_prelim.json',
+                        help='calibration file.')
     par = parser.parse_args()
     
     if not os.path.isdir(par.datapath):

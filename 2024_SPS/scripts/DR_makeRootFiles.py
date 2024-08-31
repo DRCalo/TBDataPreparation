@@ -12,8 +12,8 @@ import bz2
 import subprocess
 
 ####### Hard coded information - change as you want
-DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/devel/rawDataDreamDaq"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/devel/outputNtuples"
 
 outputFileNamePrefix='output_sps2024'
 DaqTreeName = "CERNSPS2024"
@@ -186,10 +186,11 @@ def main():
     and tries to guess which new files are there and run on them. \n \
     Otherwise, the user needs to provide --runNumber to run on an individual run. \
     If a file names exclude_runs.csv containing a comma-separated list of run numbers is in the current directory, those runs will be skipped.\n \
-    The script will produce a bad_run_list.csv file containing the list of runs where the rootification failed.')
+    The script will produce a bad_run_list.csv file containing the list of runs where the rootification failed.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--output', dest='outputFileName',default='output.root',help='Output file name')
     parser.add_argument('--runNumber',dest='runNumber',default='', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root. It supports range format e.g. "1, 2-4, 7, 10-12"')
     parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' + DaqFileDir + ', and processes them. To be used ONLY from the ideadr account on lxplus. Use --runNumber together with this option to filter run numbers.')
+
     
     par  = parser.parse_args()
 

@@ -16,6 +16,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <stdexcept>
 
 #include <TProfile.h> 
 
@@ -27,19 +28,51 @@ using json = nlohmann::json;
 double const sq3=sqrt(3.);
 
 
-struct PMTCalibration{
-    std::array<double,8> PMTSpd, PMTSpk, PMTCpd, PMTCpk;
-    PMTCalibration(const std::string&);
+class PMTCalibration
+{
+public:
+  std::map<std::string,float> PMTped, PMTpk;
+  PMTCalibration(const std::string&);
+  json jFile;
+  bool read();
 };
 
 PMTCalibration::PMTCalibration(const std::string& fname){
     std::ifstream inFile(fname,std::ifstream::in);
-    json jFile;
     inFile >> jFile;
-    PMTSpd = jFile["Calibrations"]["PMT"]["PMTS_pd"];
-    PMTSpk = jFile["Calibrations"]["PMT"]["PMTS_pk"];
-    PMTCpd = jFile["Calibrations"]["PMT"]["PMTC_pd"];
-    PMTCpk = jFile["Calibrations"]["PMT"]["PMTC_pk"];
+}
+
+bool PMTCalibration::read()
+{
+  for (auto j = jFile["Calibrations"]["PMT"].begin(); j != jFile["Calibrations"]["PMT"].end(); ++j){
+    std::string key = j.key();
+    const std::string s_peak = jFile["Calibrations"]["PMT"][key]["peak"];
+    const std::string s_ped = jFile["Calibrations"]["PMT"][key]["ped"];
+    try{
+      PMTped[key] =  std::stof(s_ped);
+    } catch (const std::invalid_argument& e){
+      std::cerr << "Error: cannot convert string " << e.what() << " in a float. Check the calibration json file." << std::endl;
+      PMTped[key] = 0;
+      return false;
+    } catch (const std::out_of_range& e){
+      std::cerr << "Error: the value " << e.what() << " is out of range for  a float. Check the calibration json file." << std::endl;
+      PMTped[key] = 0;
+      return false;
+    }
+
+    try{
+      PMTpk[key] =  std::stof(s_peak);
+    } catch (const std::invalid_argument& e){
+      std::cerr << "Error: cannot convert string " << e.what() << " in a float. Check the calibration json file." << std::endl;
+      PMTpk[key] = 0;
+      return false;
+    } catch (const std::out_of_range& e){
+      std::cerr << "Error: the value " << e.what() << " is out of range for  a float. Check the calibration json file." << std::endl;
+      PMTpk[key] = 0;
+      return false;
+    }
+  }
+  return true;
 }
 
 struct DWCCalibration{
@@ -196,8 +229,8 @@ class Event{
 
   void reset();
   void copyValues(EventOut *);
-  void calibratePMT(const PMTCalibration&, EventOut*, Long64_t entry = -1);
-  void calibrateDWC(const DWCCalibration&, EventOut*);
+  void calibratePMT(PMTCalibration&, EventOut*, Long64_t entry = -1);
+  void calibrateDWC(DWCCalibration&, EventOut*);
   Float_t getPedestal(TProfile * h_ped, Long64_t entry);
   Float_t getPedestalChan(std::string channelName, Long64_t entry);
   
@@ -450,38 +483,32 @@ void Event::copyValues(EventOut * evout)
   
 }
 
-void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
+void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
+
+  static float adcToPhysS = 40./1.24; // First attempt to bring the calorimeter to the electromagnetic scale. Number obtained shooting 40 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.24 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
+
+  static float adcToPhysC = 40./1.36; // First attempt to bring the calorimeter to the electromagnetic scale. Number obtained shooting 40 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.24 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
+
+    
   
-  if (entry < 0){
-
-    //Dummy for the moment
-
-    /*    evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
-    evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
-    evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
-    evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
-    evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
+  if (entry < 0){ // Then use the pedestals and peaks from file
     
-    evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
-    evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
-    evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
-
-    evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
-    evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
-    evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
-    evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
-    evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
-    
-    evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
-    evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
-    evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
-    evout->CPMT4 = (CPMT4-pmtcalibration.PMTCpd[3])/(pmtcalibration.PMTCpk[3]);
-    evout->CPMT5 = (CPMT5-pmtcalibration.PMTCpd[4])/(pmtcalibration.PMTCpk[4]);
-    evout->CPMT6 = (CPMT6-pmtcalibration.PMTCpd[5])/(pmtcalibration.PMTCpk[5]);
-    evout->CPMT7 = (CPMT7-pmtcalibration.PMTCpd[6])/(pmtcalibration.PMTCpk[6]);
-    evout->CPMT8 = (CPMT8-pmtcalibration.PMTCpd[7])/(pmtcalibration.PMTCpk[7]);*/
-
-    std::cout << "Not implemented " << std::endl;
+    for (auto it = this->channel.begin(); it != this->channel.end(); ++it){
+      std::string key = it->first;
+      
+      // check if the key is available in the PMTcalibration map. If it isn't, this is an ancillary. Skip for the moment 
+      
+      if (pmtcalibration.PMTped.find(key) != pmtcalibration.PMTped.end()) 
+	{
+	  static float adcToPhys;
+	  if (key.find("TS") != std::string::npos){
+	    adcToPhys = adcToPhysS;
+	  } else if (key.find("TC") != std::string::npos){
+	    adcToPhys = adcToPhysC;
+	  }
+	  this->channel_calibrated[key] = adcToPhys*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	}
+    }
 
   } else {
     
@@ -489,7 +516,7 @@ void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, 
       std::string key = it->first;
       this->channel_calibrated[key] = float(this->channel[key]) - this->getPedestalChan(key,entry);
     }
-
+  
     evout->L02_ped = this->getPedestalChan("L02",entry);
     evout->L03_ped = this->getPedestalChan("L03",entry);
     evout->L04_ped = this->getPedestalChan("L04",entry);
@@ -512,87 +539,85 @@ void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, 
     evout->C1_ped = this->getPedestalChan("Cher1",entry);
     evout->C2_ped = this->getPedestalChan("Cher2",entry);
     evout->C3_ped = this->getPedestalChan("Cher3",entry);
-
-
     
-    evout->TS55 = this->channel_calibrated["TS55"];
-    evout->TS54 = this->channel_calibrated["TS54"];
-    evout->TS53 = this->channel_calibrated["TS53"];
-    evout->TS45 = this->channel_calibrated["TS45"];
-    evout->TS44 = this->channel_calibrated["TS44"];
-    evout->TS43 = this->channel_calibrated["TS43"];
-    evout->TS35 = this->channel_calibrated["TS35"];
-    evout->TS34 = this->channel_calibrated["TS34"];
-    evout->TS33 = this->channel_calibrated["TS33"];
-    evout->TS25 = this->channel_calibrated["TS25"];
-    evout->TS24 = this->channel_calibrated["TS24"];
-    evout->TS23 = this->channel_calibrated["TS23"];
-    evout->TS16 = this->channel_calibrated["TS16"];
-    evout->TS15 = this->channel_calibrated["TS15"];
-    evout->TS14 = this->channel_calibrated["TS14"];
-    evout->TS17 = this->channel_calibrated["TS17"];
-    evout->TS00 = this->channel_calibrated["TS00"];
-    evout->TS13 = this->channel_calibrated["TS13"];
-    evout->TS10 = this->channel_calibrated["TS10"];
-    evout->TS11 = this->channel_calibrated["TS11"];
-    evout->TS12 = this->channel_calibrated["TS12"];
-    evout->TS20 = this->channel_calibrated["TS20"];
-    evout->TS21 = this->channel_calibrated["TS21"];
-    evout->TS22 = this->channel_calibrated["TS22"];
-    evout->TS30 = this->channel_calibrated["TS30"];
-    evout->TS31 = this->channel_calibrated["TS31"];
-    evout->TS32 = this->channel_calibrated["TS32"];
-    evout->TS40 = this->channel_calibrated["TS40"];
-    evout->TS41 = this->channel_calibrated["TS41"];
-    evout->TS42 = this->channel_calibrated["TS42"];
-    evout->TS50 = this->channel_calibrated["TS50"];
-    evout->TS51 = this->channel_calibrated["TS51"];
-    evout->TS52 = this->channel_calibrated["TS52"];
-    evout->TS60 = this->channel_calibrated["TS60"];
-    evout->TS61 = this->channel_calibrated["TS61"];
-    evout->TS62 = this->channel_calibrated["TS62"];
-    
-    evout->TC55 = this->channel_calibrated["TC55"];
-    evout->TC54 = this->channel_calibrated["TC54"];
-    evout->TC53 = this->channel_calibrated["TC53"];
-    evout->TC45 = this->channel_calibrated["TC45"];
-    evout->TC44 = this->channel_calibrated["TC44"];
-    evout->TC43 = this->channel_calibrated["TC43"];
-    evout->TC35 = this->channel_calibrated["TC35"];
-    evout->TC34 = this->channel_calibrated["TC34"];
-    evout->TC33 = this->channel_calibrated["TC33"];
-    evout->TC25 = this->channel_calibrated["TC25"];
-    evout->TC24 = this->channel_calibrated["TC24"];
-    evout->TC23 = this->channel_calibrated["TC23"];
-    evout->TC16 = this->channel_calibrated["TC16"];
-    evout->TC15 = this->channel_calibrated["TC15"];
-    evout->TC14 = this->channel_calibrated["TC14"];
-    evout->TC17 = this->channel_calibrated["TC17"];
-    evout->TC00 = this->channel_calibrated["TC00"];
-    evout->TC13 = this->channel_calibrated["TC13"];
-    evout->TC10 = this->channel_calibrated["TC10"];
-    evout->TC11 = this->channel_calibrated["TC11"];
-    evout->TC12 = this->channel_calibrated["TC12"];
-    evout->TC20 = this->channel_calibrated["TC20"];
-    evout->TC21 = this->channel_calibrated["TC21"];
-    evout->TC22 = this->channel_calibrated["TC22"];
-    evout->TC30 = this->channel_calibrated["TC30"];
-    evout->TC31 = this->channel_calibrated["TC31"];
-    evout->TC32 = this->channel_calibrated["TC32"];
-    evout->TC40 = this->channel_calibrated["TC40"];
-    evout->TC41 = this->channel_calibrated["TC41"];
-    evout->TC42 = this->channel_calibrated["TC42"];
-    evout->TC50 = this->channel_calibrated["TC50"];
-    evout->TC51 = this->channel_calibrated["TC51"];
-    evout->TC52 = this->channel_calibrated["TC52"];
-    evout->TC60 = this->channel_calibrated["TC60"];
-    evout->TC61 = this->channel_calibrated["TC61"];
-    evout->TC62 = this->channel_calibrated["TC62"];
-
   }
+  
+  evout->TS55 = this->channel_calibrated["TS55"];
+  evout->TS54 = this->channel_calibrated["TS54"];
+  evout->TS53 = this->channel_calibrated["TS53"];
+  evout->TS45 = this->channel_calibrated["TS45"];
+  evout->TS44 = this->channel_calibrated["TS44"];
+  evout->TS43 = this->channel_calibrated["TS43"];
+  evout->TS35 = this->channel_calibrated["TS35"];
+  evout->TS34 = this->channel_calibrated["TS34"];
+  evout->TS33 = this->channel_calibrated["TS33"];
+  evout->TS25 = this->channel_calibrated["TS25"];
+  evout->TS24 = this->channel_calibrated["TS24"];
+  evout->TS23 = this->channel_calibrated["TS23"];
+  evout->TS16 = this->channel_calibrated["TS16"];
+  evout->TS15 = this->channel_calibrated["TS15"];
+  evout->TS14 = this->channel_calibrated["TS14"];
+  evout->TS17 = this->channel_calibrated["TS17"];
+  evout->TS00 = this->channel_calibrated["TS00"];
+  evout->TS13 = this->channel_calibrated["TS13"];
+  evout->TS10 = this->channel_calibrated["TS10"];
+  evout->TS11 = this->channel_calibrated["TS11"];
+  evout->TS12 = this->channel_calibrated["TS12"];
+  evout->TS20 = this->channel_calibrated["TS20"];
+  evout->TS21 = this->channel_calibrated["TS21"];
+  evout->TS22 = this->channel_calibrated["TS22"];
+  evout->TS30 = this->channel_calibrated["TS30"];
+  evout->TS31 = this->channel_calibrated["TS31"];
+  evout->TS32 = this->channel_calibrated["TS32"];
+  evout->TS40 = this->channel_calibrated["TS40"];
+  evout->TS41 = this->channel_calibrated["TS41"];
+  evout->TS42 = this->channel_calibrated["TS42"];
+  evout->TS50 = this->channel_calibrated["TS50"];
+  evout->TS51 = this->channel_calibrated["TS51"];
+  evout->TS52 = this->channel_calibrated["TS52"];
+  evout->TS60 = this->channel_calibrated["TS60"];
+  evout->TS61 = this->channel_calibrated["TS61"];
+  evout->TS62 = this->channel_calibrated["TS62"];
+  
+  evout->TC55 = this->channel_calibrated["TC55"];
+  evout->TC54 = this->channel_calibrated["TC54"];
+  evout->TC53 = this->channel_calibrated["TC53"];
+  evout->TC45 = this->channel_calibrated["TC45"];
+  evout->TC44 = this->channel_calibrated["TC44"];
+  evout->TC43 = this->channel_calibrated["TC43"];
+  evout->TC35 = this->channel_calibrated["TC35"];
+  evout->TC34 = this->channel_calibrated["TC34"];
+  evout->TC33 = this->channel_calibrated["TC33"];
+  evout->TC25 = this->channel_calibrated["TC25"];
+  evout->TC24 = this->channel_calibrated["TC24"];
+  evout->TC23 = this->channel_calibrated["TC23"];
+  evout->TC16 = this->channel_calibrated["TC16"];
+  evout->TC15 = this->channel_calibrated["TC15"];
+  evout->TC14 = this->channel_calibrated["TC14"];
+  evout->TC17 = this->channel_calibrated["TC17"];
+  evout->TC00 = this->channel_calibrated["TC00"];
+  evout->TC13 = this->channel_calibrated["TC13"];
+  evout->TC10 = this->channel_calibrated["TC10"];
+  evout->TC11 = this->channel_calibrated["TC11"];
+  evout->TC12 = this->channel_calibrated["TC12"];
+  evout->TC20 = this->channel_calibrated["TC20"];
+  evout->TC21 = this->channel_calibrated["TC21"];
+  evout->TC22 = this->channel_calibrated["TC22"];
+  evout->TC30 = this->channel_calibrated["TC30"];
+  evout->TC31 = this->channel_calibrated["TC31"];
+  evout->TC32 = this->channel_calibrated["TC32"];
+  evout->TC40 = this->channel_calibrated["TC40"];
+  evout->TC41 = this->channel_calibrated["TC41"];
+  evout->TC42 = this->channel_calibrated["TC42"];
+  evout->TC50 = this->channel_calibrated["TC50"];
+  evout->TC51 = this->channel_calibrated["TC51"];
+  evout->TC52 = this->channel_calibrated["TC52"];
+  evout->TC60 = this->channel_calibrated["TC60"];
+  evout->TC61 = this->channel_calibrated["TC61"];
+  evout->TC62 = this->channel_calibrated["TC62"];  
 }
 
-void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
+void Event::calibrateDWC(DWCCalibration& dwccalibration, EventOut* evout){
   if (DWC1R != -1 && DWC1L != -1)
     evout->XDWC1 = (DWC1R-DWC1L)*dwccalibration.DWC_sl[0]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[0]+dwccalibration.DWC_cent[0];
   else evout->XDWC1 = -1.;
