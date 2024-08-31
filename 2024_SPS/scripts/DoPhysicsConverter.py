@@ -92,7 +92,6 @@ def main():
     print(macroPath)
     for fl in mrgfls:
         cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"/\", \""+calFile+"\"," + doCalibration + "," + doLocPed+ ")'"
-        print(cmnd1)
         os.system(cmnd1)
         cmnd2 = "mv physics_sps2024_run"+fl+".root "+phspath  ### Really careful here!
         os.system(cmnd2)
