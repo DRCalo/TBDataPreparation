@@ -12,8 +12,8 @@ import bz2
 import subprocess
 
 ####### Hard coded information - change as you want
-DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/devel/rawDataDreamDaq"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/devel/outputNtuples"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples"
 
 outputFileNamePrefix='output_sps2024'
 DaqTreeName = "CERNSPS2024"

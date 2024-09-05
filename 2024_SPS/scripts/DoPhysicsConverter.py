@@ -34,7 +34,7 @@ def main():
                         default=False,
                         help='Print more information')
     parser.add_argument('--doCalibration', action='store_true', dest='doCalibration',
-                        default=False,
+                        default=True,
                         help='If specified, do calibration using pedestals from the json calibration file')
     parser.add_argument('--useLocalPedestals', action='store_true', dest='useLocalPedestals',
                         default=False,
@@ -46,7 +46,7 @@ def main():
                         default='/eos/user/i/ideadr/TB2024_H8/outputNtuples/',
                         help='input root file path.')
     parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
-                        default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX_2024_prelim.json',
+                        default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json',
                         help='calibration file.')
     par = parser.parse_args()
     

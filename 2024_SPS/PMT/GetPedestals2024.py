@@ -7,9 +7,16 @@ import AdcMap24
 # Simple script to produce pedestal values 
 
 inDirName = "/eos/user/i/ideadr/devel/outputNtuples"
-inFileName = "output_sps2024_run0557.root"
+#inFileName = "output_sps2024_run0557.root"
+#outFileName = "ped_output.root"
 
-outFileName = "ped_output.root"
+inFileName = "output_sps2024_run0770.root" # Pedestal run taken with original HV voltages on T00
+outFileName = "ped_outout_oldHV.root"
+
+#inFileName = "output_sps2024_run0767.root" # Pedestal run taken with original HV voltages on T00
+#outFileName = "ped_outout_newHV.root"
+
+
 
 ifile = ROOT.TFile(inDirName + '/' + inFileName)
 
