@@ -85,8 +85,8 @@ void GetPedestals()
 	
 	//run numbers to be changed after calibration
 	//runs = , 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770, 770};
-	const int run = 770; // Pedestals for run with old HV values at T00
-	//const int run = 767; // Pedestals for run with new HV values at T00
+	//const int run = 770; // Pedestals for run with old HV values at T00
+	const int run = 767; // Pedestals for run with new HV values at T00
 
 
 	//cout<<"run series starting with " <<runs[0] << endl; 

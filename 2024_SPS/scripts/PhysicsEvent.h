@@ -485,9 +485,9 @@ void Event::copyValues(EventOut * evout)
 
 void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
 
-  static float adcToPhysS = 40./1.24; // First attempt to bring the calorimeter to the electromagnetic scale. Number obtained shooting 40 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.24 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
+  static float adcToPhysS = 20./1.2617; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
 
-  static float adcToPhysC = 40./1.36; // First attempt to bring the calorimeter to the electromagnetic scale. Number obtained shooting 40 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.24 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
+  static float adcToPhysC = 20./1.3396; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment 
 
     
   
