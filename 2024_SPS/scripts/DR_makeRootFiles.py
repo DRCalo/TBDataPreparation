@@ -12,8 +12,11 @@ import bz2
 import subprocess
 
 ####### Hard coded information - change as you want
-DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples"
+#DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq"
+#MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples"
+
+DaqFileDir=""
+MergedFileDir=""
 
 outputFileNamePrefix='output_sps2024'
 DaqTreeName = "CERNSPS2024"
@@ -43,7 +46,6 @@ def CreateBlendedFile(DaqInputTree,outputfilename):
     return 0
 
 def formatRunNumber(runn):
-
 
     IsList = isinstance(runn,list) or isinstance(runn,set)
     if not IsList:
@@ -189,10 +191,15 @@ def main():
     The script will produce a bad_run_list.csv file containing the list of runs where the rootification failed.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--output', dest='outputFileName',default='output.root',help='Output file name')
     parser.add_argument('--runNumber',dest='runNumber',default='', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root. It supports range format e.g. "1, 2-4, 7, 10-12"')
-    parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' + DaqFileDir + ', and processes them. To be used ONLY from the ideadr account on lxplus. Use --runNumber together with this option to filter run numbers.')
+    parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in the directory specified by --inputDir  and processes them. To be used ONLY from the ideadr account on lxplus. Use --runNumber together with this option to filter run numbers.')
+    parser.add_argument('--inputDir',dest='inputDir',default="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq", help='Raw data (bz2 files) directory')
+    parser.add_argument('--outputDir',dest='outputDir',default="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples", help='Directory where to store the output.')
 
     
     par  = parser.parse_args()
+
+    DaqFileDir = par.inputDir
+    MergedFileDIr = par.outputDir
 
     if par.newFiles:
         ##### build runnumber list
