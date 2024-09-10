@@ -85,6 +85,16 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
 
   Event * ev = new Event();
   EventOut  * evout = new EventOut();
+
+  // Set run_number in Event to the right thing
+
+  if (!ev->setRunNumber(run)){
+    std::cerr << "Cannot convert string " << run << " in a useful run number. Refusing to proceed further...." << std::endl;
+    return;
+  }
+  
+  // Prepare to write EventOut to file
+  
   ftree->Branch("Events",evout);
   
   // Determine the PMT pedestals

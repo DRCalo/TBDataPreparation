@@ -225,6 +225,8 @@ class Event{
   std::map<std::string, float> channel_calibrated;
   int DWC1L, DWC1R, DWC1U, DWC1D, DWC2L, DWC2R, DWC2U, DWC2D;
 
+  unsigned int run_number;
+  
   std::map<std::string,TProfile *> m_h_ped_chan;
 
   void reset();
@@ -233,10 +235,12 @@ class Event{
   void calibrateDWC(DWCCalibration&, EventOut*);
   Float_t getPedestal(TProfile * h_ped, Long64_t entry);
   Float_t getPedestalChan(std::string channelName, Long64_t entry);
+  bool setRunNumber(const std::string run);
   
 };
 
-Event::Event()
+Event::Event():
+  run_number(0)
 {}
 
 void Event::reset()
@@ -249,6 +253,22 @@ void Event::reset()
   }
 }
 
+bool Event::setRunNumber(const std::string run)
+{
+  try {
+    run_number = std::stoi(run);  // Converts the string to an int
+  std:;cout << "Run number to be checked " << run_number << std::endl;
+  } catch (std::invalid_argument &e) {
+    std::cerr << "Event::setRunNumber: Cannot convert string to int " << e.what() << std::endl;
+    return false;
+  } catch (std::out_of_range &e) {
+    std::cerr << "Event::setRunNumber: run out of range " << e.what() << std::endl;
+    return false;
+  }
+  
+  return true;
+
+}
 
 
 Float_t Event::getPedestal(TProfile * h_ped, Long64_t entry)
@@ -487,12 +507,30 @@ void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64
 
   static float adcToPhysS = 20./1.2617; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
 
-  static float adcToPhysC = 20./1.3396; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment 
+  static float adcToPhysC = 20./1.3396; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
 
+
+  /* These numbers are used to take into account the change in HV in tower 0 in some runs*/
+  static float correctT00_S = -1.;
+  static float correctT00_C = -1.;  
+
+  if (correctT00_S < 0){ // check that we haven't yet tested whether this run should be corrected or not
+    correctT00_S = 1.;
+    correctT00_C = 1.;
+    std::vector<unsigned int> runs_tobecorrected = {766,767,772,774,775,776,777,778,779,780,781,782,783,784,786,792,793,794,796,797};
+    for (unsigned int run_tc : runs_tobecorrected){
+      if (run_number == run_tc){
+	correctT00_S = 15.37/5.75; // Ratio of the peak position in run 746 and in run 766 (766 before applying this calibration
+	correctT00_C = 14.9/2.88; // Ratio of the peak position in run 746 and in run 766 (766 before applying this calibration
+	std::cout << "This run was taken with the new HV. The response in T00 will be rescaled" << std::endl;
+	std::cout << "TS00 response will be multiplied by " << correctT00_S << std::endl;
+	std::cout << "TC00 response will be multiplied by " << correctT00_C << std::endl;
+      }
+    }
+  }
     
   
   if (entry < 0){ // Then use the pedestals and peaks from file
-    
     for (auto it = this->channel.begin(); it != this->channel.end(); ++it){
       std::string key = it->first;
       
@@ -506,7 +544,13 @@ void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64
 	  } else if (key.find("TC") != std::string::npos){
 	    adcToPhys = adcToPhysC;
 	  }
-	  this->channel_calibrated[key] = adcToPhys*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  if (key == "TS00"){
+	    this->channel_calibrated[key] = adcToPhys*correctT00_S*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  } else if (key == "TC00"){
+	    this->channel_calibrated[key] = adcToPhys*correctT00_C*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  } else {
+	    this->channel_calibrated[key] = adcToPhys*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  }
 	}
     }
 
