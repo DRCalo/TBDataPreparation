@@ -21,7 +21,13 @@ shift 1
 #LCGVER=/cvmfs/sw.hsf.org/key4hep/setup.sh
 LCGVER=/cvmfs/sft.cern.ch/lcg/views/LCG_106/x86_64-el9-gcc13-opt/setup.sh
 
-source ${LCGVER}
+
+if [ if ${LCGVER} ]
+then 
+    source ${LCGVER}
+else
+    echo 'Cannot find LCG setup script ${LCGVER}. If this is expected, try using the setup_noLCG,sh scriipt'
+fi
 
 # Use cvmfs-venv to hack back against PYTHONPATH pollution
 # c.f. https://github.com/matthewfeickert/cvmfs-venv for more information and examples
@@ -42,7 +48,7 @@ then
     mv setup.sh setup.sh.old
 fi
 
-
+cp TBDataPreparation/setup_noLCG.sh .
 
 cat <<EOF > setup.sh
 
