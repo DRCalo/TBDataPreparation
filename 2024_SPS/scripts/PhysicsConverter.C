@@ -20,15 +20,17 @@
 #include <string>
 #include <fstream>
 #include "PhysicsEvent.h"
+#include "EventOut.h"
 #include <string>
 #include <cstring>
 
+ClassImp(EventOut)
+
+void PhysicsConverter(const string run, const string inputPath, const string calFile, bool doCalibration = false, bool doLocPed = false, const string adcMapFile = "AdcMap24.json");
 
 using json = nlohmann::json;
 
-ClassImp(EventOut)
-
-void PhysicsConverter(const string run, const string inputPath, const string calFile, bool doCalibration = false, bool doLocPed = false, const string adcMapFile = "AdcMap24.json"){
+void PhysicsConverter(const string run, const string inputPath, const string calFile, bool doCalibration, bool doLocPed, const string adcMapFile){
 
   //Open merged ntuples
   //

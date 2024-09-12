@@ -4,6 +4,7 @@ import glob
 import os
 import argparse
 import re
+import ROOT
 
 
 def returnRunNumber(x: str) -> str:
@@ -81,18 +82,17 @@ def main():
 
     # Deal with bool options
 
-    doCalibration = "false"
-    doLocPed = "false"
-
-    if par.doCalibration:
-        doCalibration = "true"
-    if par.useLocalPedestals:
-        doLocPed = "true"
+    ROOT.gInterpreter.AddIncludePath("./")
+    ROOT.gInterpreter.AddIncludePath(macroPath + "/")
     
     print(macroPath)
+    ROOT.gROOT.LoadMacro(macroPath+"PhysicsConverter.C")
+
     for fl in mrgfls:
-        cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"/\", \""+calFile+"\"," + doCalibration + "," + doLocPed+ ")'"
-        os.system(cmnd1)
+        print(fl)
+        print(par.datapath)
+        ROOT.PhysicsConverter(fl, par.datapath+ '/',calFile,par.doCalibration, par.useLocalPedestals)
+        
         cmnd2 = "mv physics_sps2024_run"+fl+".root "+phspath  ### Really careful here!
         os.system(cmnd2)
 
