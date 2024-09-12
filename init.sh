@@ -22,7 +22,7 @@ shift 1
 LCGVER=/cvmfs/sft.cern.ch/lcg/views/LCG_106/x86_64-el9-gcc13-opt/setup.sh
 
 
-if [ if ${LCGVER} ]
+if [ -f ${LCGVER} ]
 then 
     source ${LCGVER}
 else
