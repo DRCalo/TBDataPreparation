@@ -199,18 +199,11 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
   //
   Mergfile->Close();
   Outfile->cd();
-  if (doLocPed){
-    Outfile->mkdir("Pedestal_Histograms");
-    Outfile->cd("Pedestal_Histograms");
-    /*    for (unsigned int ch = 0; ch < 8; ++ch){
-      h_ped_scin[ch]->Write();
-      h_ped_cher[ch]->Write();
-    }
-    h_ped_PShower->Write();
-    h_ped_MCounter->Write();
-    h_ped_C1->Write();
-    h_ped_C2->Write();
-    h_ped_C3->Write(); */
+  Outfile->mkdir("Pedestal_Histograms");
+  Outfile->cd("Pedestal_Histograms");
+  for (auto j = adcMap.channel_map.begin(); j != adcMap.channel_map.end(); ++j){
+    std::string key = j.key();
+    ev->m_h_ped_chan[key]->Write();
   }
   Outfile->cd();  
   ftree->Write();
