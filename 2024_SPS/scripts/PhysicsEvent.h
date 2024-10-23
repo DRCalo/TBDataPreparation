@@ -571,6 +571,10 @@ void Event::calibrateDWC(DWCCalibration& dwccalibration, EventOut* evout){
   else evout->YDWC2 = -1.;
 }
 
+/*void Event::calibratePMT_TDC(DWCCalibration& dwccalibration, EventOut* evout){
+  evout->TDC_S00 = TDC_S00  * PMT_TDC_calibration.TDC_tons[0];
+  }*/
+
 
 
 #endif

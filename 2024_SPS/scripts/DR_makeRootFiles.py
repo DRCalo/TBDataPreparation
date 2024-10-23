@@ -110,12 +110,14 @@ def GetNewRuns():
     daq_run_list = [] 
 
     for filename in daq_list:
+        print(filename)
         if (int(os.path.basename(filename).split('.')[1].lstrip('run'))) > 400:
             daq_run_list.append(os.path.basename(filename).split('.')[1].lstrip('run'))
 
     already_merged = set()
 
     for filename in merged_list:
+        print(filename) 
         already_merged.add(os.path.basename(filename).split('_')[2].split('.')[0].lstrip('run') )
         
 
@@ -198,8 +200,11 @@ def main():
     
     par  = parser.parse_args()
 
+    global DaqFileDir
+    global MergedFileDir
+
     DaqFileDir = par.inputDir
-    MergedFileDIr = par.outputDir
+    MergedFileDir = par.outputDir
 
     if par.newFiles:
         ##### build runnumber list
