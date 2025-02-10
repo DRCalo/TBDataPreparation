@@ -47,9 +47,18 @@ def main():
                         default='/eos/user/i/ideadr/TB2024_H8/outputNtuples/',
                         help='input root file path.')
     parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
-                        default='/afs/cern.ch/user/i/ideadr/TB2024/TBDataPreparation/2024_SPS/scripts/RunXXX.json',
+                        default='/afs/cern.ch/user/i/ideadr/TB2024/run/RunXXX.json',
                         help='calibration file.')
+    parser.add_argument('-r','--run_number', action='store', dest='runNumber',
+                        default='-1000',
+                        help='If different from -1000, causes the script to run only on the indicated run number.')
     par = parser.parse_args()
+
+
+    print("The arguments that will be used are:")
+    for arg, value in vars(par).items():
+        print(f"{arg}: {value}")
+
     
     if not os.path.isdir(par.datapath):
         print( 'ERROR! Input directory ' + par.datapath + ' does not exist.' )
@@ -62,20 +71,23 @@ def main():
     #One needs to make assumptions here on the format of the filename. Not the best.....
 
     mrgpath = par.datapath
-    mrgfls = [ returnRunNumber(x) for x in glob.glob(mrgpath+"/*.root")]
     recpath = par.ntuplepath
-    recfls = [ returnRunNumber(x) for x in glob.glob(recpath+"/*.root")]
-    print(mrgfls)
-    print(recfls)
-    mrgfls = list(set(mrgfls) - set(recfls))
-    
     phspath = par.ntuplepath
+    mrgfls = []
     
-    print(mrgfls, recfls)
+    if par.runNumber  == '-1000':
     
-    if mrgfls:
-        print( str(len(mrgfls))+" new files found")
+        mrgfls = [ returnRunNumber(x) for x in glob.glob(mrgpath+"/*.root")]
+        recfls = [ returnRunNumber(x) for x in glob.glob(recpath+"/*.root")]
+        mrgfls = list(set(mrgfls) - set(recfls))
+        
+        print(mrgfls, recfls)
+        
+        if mrgfls:
+            print( str(len(mrgfls))+" new files found")
 
+    else:
+        mrgfls = [par.runNumber]
 
     calFile=par.calibrationfile
     macroPath = os.getenv('IDEARepo') + "/2024_SPS/scripts/"

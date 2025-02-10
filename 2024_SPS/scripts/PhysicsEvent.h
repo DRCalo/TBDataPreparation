@@ -439,7 +439,7 @@ void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64
 	  } else if (key.find("TC") != std::string::npos){
 	    adcToPhys = adcToPhysC;
 	  }
-	  if (key == "TS00"){
+	  if (key == "TS00"){ // to deal with the changes in HV
 	    this->channel_calibrated[key] = adcToPhys*correctT00_S*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
 	  } else if (key == "TC00"){
 	    this->channel_calibrated[key] = adcToPhys*correctT00_C*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
