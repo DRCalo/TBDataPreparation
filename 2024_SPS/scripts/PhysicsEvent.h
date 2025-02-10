@@ -119,6 +119,7 @@ class Event{
   std::map<std::string, int> channel;
   std::map<std::string, float> channel_calibrated;
   int DWC1L, DWC1R, DWC1U, DWC1D, DWC2L, DWC2R, DWC2U, DWC2D;
+  int TDC_TC00, TDC_TS00, TDC_TC11, TDC_TS11, TDC_TC15, TDC_TS15;
 
   unsigned int run_number;
   
@@ -128,6 +129,7 @@ class Event{
   void copyValues(EventOut *);
   void calibratePMT(PMTCalibration&, EventOut*, Long64_t entry = -1);
   void calibrateDWC(DWCCalibration&, EventOut*);
+  void calibrateTDC(DWCCalibration&, EventOut*);
   Float_t getPedestal(TProfile * h_ped, Long64_t entry);
   Float_t getPedestalChan(std::string channelName, Long64_t entry);
   bool setRunNumber(const std::string run);
@@ -395,6 +397,13 @@ void Event::copyValues(EventOut * evout)
   evout->C2_ped = 0;
   evout->C3_ped = 0;
 
+  evout->TDC_TC00 = -1;
+  evout->TDC_TS00 = -1;
+  evout->TDC_TC11 = -1;
+  evout->TDC_TS11 = -1;
+  evout->TDC_TC15 = -1;
+  evout->TDC_TS15 = -1;
+
   
 }
 
@@ -412,7 +421,8 @@ void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64
   if (correctT00_S < 0){ // check that we haven't yet tested whether this run should be corrected or not
     correctT00_S = 1.;
     correctT00_C = 1.;
-    std::vector<unsigned int> runs_tobecorrected = {766,767,772,774,775,776,777,778,779,780,781,782,783,784,786,792,793,794,796,797};
+    std::vector<unsigned int> runs_tobecorrected = {766,767,772,774,775,776,777,778,779,780,781,782,783,784,786,792,793,794,796,797,793,794,797,960,962,963,965,
+      966,967,968,972,1000,1019,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1013,1014,1034,1044,1045,1046,1048,1049,1050,1051,1052,982,983,988,989,990,991,992};
     for (unsigned int run_tc : runs_tobecorrected){
       if (run_number == run_tc){
 	correctT00_S = 15.37/5.75; // Ratio of the peak position in run 746 and in run 766 (766 before applying this calibration
@@ -569,6 +579,15 @@ void Event::calibrateDWC(DWCCalibration& dwccalibration, EventOut* evout){
   if (DWC2D != -1 && DWC2U != -1)
     evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
   else evout->YDWC2 = -1.;
+}
+
+void Event::calibrateTDC(DWCCalibration& dwccalibration, EventOut* evout){
+  evout->TDC_TC00 = TDC_TC00;
+  evout->TDC_TS00 = TDC_TS00;
+  evout->TDC_TC11 = TDC_TC11;
+  evout->TDC_TS11 = TDC_TS11;
+  evout->TDC_TC15 = TDC_TC15;
+  evout->TDC_TS15 = TDC_TS15;
 }
 
 /*void Event::calibratePMT_TDC(DWCCalibration& dwccalibration, EventOut* evout){

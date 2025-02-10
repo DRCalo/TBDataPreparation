@@ -90,6 +90,7 @@ public:
   float PShower_ped, MCounter_ped, C1_ped, C2_ped, C3_ped, TailC_ped;
   float ene_R0_S, ene_R1_S, ene_R2_S, ene_R3_S, ene_R4_S, ene_R5_S, ene_R6_S;
   float ene_R0_C, ene_R1_C, ene_R2_C, ene_R3_C, ene_R4_C, ene_R5_C, ene_R6_C;
+  int TDC_TC00, TDC_TS00, TDC_TC11, TDC_TS11, TDC_TC15, TDC_TS15; 
 
   void CompRing0S(){ene_R0_S = TS00;}
   void CompRing1S(){ene_R1_S = TS16+TS15+TS14+TS17+TS13+TS10+TS11+TS12;}

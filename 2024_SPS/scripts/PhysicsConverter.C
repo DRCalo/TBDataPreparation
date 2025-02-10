@@ -146,6 +146,17 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
       std::string key = j.key();
       ev->channel[key] = ADCs[adcMap.channel_map[key]["addr"]];
     }
+
+    // Store the values of the TDC related to the calorimeter prototype. The values will make sense only for 2024 runs > 935
+
+    // Implemented by I/ Vivarelli and A. Pareti 10/02/2025
+
+    ev->TDC_TC00 = TDCsval[8];
+    ev->TDC_TS00 = TDCsval[9];
+    ev->TDC_TC11 = TDCsval[10];
+    ev->TDC_TS11 = TDCsval[11];
+    ev->TDC_TC15 = TDCsval[12];
+    ev->TDC_TS15 = TDCsval[13]; 
     
     ev->copyValues(evout);
 
@@ -157,9 +168,11 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     ev->DWC2R=TDCsval[5];
     ev->DWC2U=TDCsval[6];
     ev->DWC2D=TDCsval[7];
+
+
     
     //Calibrate SiPMs and PMTs
-    //*/
+    //
 
     if (doCalibration){
       if (doLocPed){
@@ -171,6 +184,7 @@ void PhysicsConverter(const string run, const string inputPath, const string cal
     }
     
     ev->calibrateDWC(dwcCalibration, evout);
+    ev->calibrateTDC(dwcCalibration, evout);
     
     evout->CompRing0S();
     evout->CompRing1S();
