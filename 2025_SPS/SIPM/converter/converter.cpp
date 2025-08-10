@@ -2,7 +2,7 @@
 
 Verbose VERBOSE = Verbose::kQuiet;
 
-uint32_t getFileSize(const std::string& fileName) {
+uint64_t getFileSize(const std::string& fileName) {
   std::ifstream inputStream(fileName, std::ios::binary | std::ios::ate);
   logging("Opening file: " + fileName, Verbose::kInfo);
 
@@ -11,18 +11,18 @@ uint32_t getFileSize(const std::string& fileName) {
     exit(EXIT_FAILURE);
   }
 
-  const uint32_t fileSize = static_cast<uint32_t>(inputStream.tellg());
+  const uint64_t fileSize = static_cast<uint64_t>(inputStream.tellg());
 
   inputStream.close();
   if (inputStream.is_open()) {
     logging("Cannot close file file: " + fileName, Verbose::kError);
     exit(EXIT_FAILURE);
   }
-  logging("File size: " + std::to_string(fileSize / (1024 * 1024)) + " Mb", Verbose::kInfo);
+  logging("File size: " + std::to_string(fileSize / (1024 * 1024)) + " MiB", Verbose::kInfo);
   return fileSize;
 }
 
-std::vector<char> readRawData(const std::string& fileName, const uint32_t size) {
+std::vector<char> readRawData(const std::string& fileName, const uint64_t size) {
   std::vector<char> data(size);
   std::ifstream inputStream(fileName, std::ios::binary | std::ios::in);
   if (!inputStream) {
@@ -531,13 +531,22 @@ int main(int argc, char const* argv[]) {
   }
   const std::string fileName = argv[1];
 
-  const uint32_t fileSizeBytes = getFileSize(fileName);
+std::cout << "Getting input file size " << std::endl;
+
+  const uint64_t fileSizeBytes = getFileSize(fileName);
+
+  std::cout << "The input file size is " << fileSizeBytes <<  " MiB" << std::endl;
 
   // Read all file
+
+  std::cout << "Now sending the full input data to memory " << std::endl;
   const std::vector<char> rawData = readRawData(fileName, fileSizeBytes);
+  std::cout << "File read" << std::endl;
 
   // Get file header (file size, starting time, ...)
   const FileHeader header = getFileHeader(rawData);
+std::cout << header.acqMode << '\t' << header.acqStart << '\t' << header.dataFormatVersion << '\t' << header.softwareVersion << '\t' << header.vSoftware << std::endl;
+return 0;
 
   // Get file info (nBoards, nEvents, acqMode, ...)
   const FileInfo fileInfo = getFileInfo(rawData, header);

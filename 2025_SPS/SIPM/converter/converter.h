@@ -52,7 +52,7 @@ typedef struct {
   uint8_t nBoards, acquisitionMode;
 } RootFileInfo;
 
-uint32_t getFileSize(const std::string&);
+uint64_t getFileSize(const std::string&);
 
 std::vector<char> readRawData(const std::string&, const uint32_t);
 
