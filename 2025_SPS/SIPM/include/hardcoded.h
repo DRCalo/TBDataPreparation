@@ -1,22 +1,32 @@
 #pragma once
 #include <stdint.h>
 
+/***************************************************
+## \file hardcoded
+## \brief: A number of parameters and stuctures used elsewhere 
+##  in the converter code.
+## \author: Iacopo Vivarelli with code originally 
+##     developed by University of Insubria 
+## \start date: 11 August 2025
+##
+##***************************************************/
+
 // Control code verbosity
 enum class Verbose { kQuiet, kError, kWarn, kInfo, kPedantic };
 
 // Enum for different acquisition modes
-enum class AcquisitionMode { kSpectroscopy, kTiming, kSpectroscopyTiming, kCounting };
+enum class AcquisitionMode { kSpectroscopy = 1, kTiming, kSpectroscopyTiming, kCounting };
 
 // Maximum number of boards (in this case 5 boards used at test beam)
 static constexpr uint8_t MAX_BOARDS = 5;
 // Number of channels read out by each board
 static constexpr uint8_t NCHANNELS = 64;
 // Size on the file header (14 bytes as per CAEN manual)
-static constexpr uint8_t FILE_HEADER_SIZE = 21;
+static constexpr uint32_t FILE_HEADER_SIZE = 25;
 
 // Size of the header of each event (spectroscopy - timing - spectroscopy&timing
 // - counting)
-static constexpr uint32_t EVENT_HEADER_SIZE[] = {27, 21, 27, 27};
+static constexpr uint32_t EVENT_HEADER_SIZE[] = {27, 13, 27, 27};
 // Size of one channel read out (spectroscopy - timing - spectroscopy&timing -
 // counting)
 static constexpr uint32_t EVENTS_SIZE[] = {6, 7, 12, 5};

@@ -13,6 +13,10 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Tree)
 # Public headers you want in the dictionary (adjust as needed)
 set(PUBLIC_HEADERS
     ${PROJECT_SOURCE_DIR}/include/Decoder.h
+    ${PROJECT_SOURCE_DIR}/include/Channel.h
+    ${PROJECT_SOURCE_DIR}/include/Board.h
+    ${PROJECT_SOURCE_DIR}/include/FileHeader.h
+    ${PROJECT_SOURCE_DIR}/include/EventFragment.h
     ${PROJECT_SOURCE_DIR}/include/hardcoded.h
 )
 
