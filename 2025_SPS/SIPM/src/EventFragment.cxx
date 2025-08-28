@@ -31,13 +31,16 @@ void EventFragment::Reset()
     for (unsigned int i = 0; i < 8; ++i){
         m_channelMask[i] = '0';
     }
+
+    m_payload.clear();
 }
 
- bool EventFragment::Read(std::vector<char> l_data,AcquisitionMode l_acqMode)
+ bool EventFragment::Read(const std::vector<char>& l_data,AcquisitionMode l_acqMode)
  {
+    this->Reset();
     std::size_t offset = 0;
     switch(l_acqMode){
-        case AcquisitionMode::kSpectroscopyTiming:
+        case AcquisitionMode::kSpectroscopyTiming: {
             m_eventSize = (static_cast<unsigned char>(l_data[1]) << 8) |
             static_cast<unsigned char>(l_data[0]);
             m_boardID = static_cast<uint8_t>(l_data[2]);
@@ -59,7 +62,22 @@ void EventFragment::Reset()
             logging("m_timeStamp =  " + std::to_string(m_timeStamp),Verbose::kPedantic);
             logging("m_triggerID =  " + std::to_string(m_triggerID),Verbose::kPedantic);
             printToHex(m_channelMask,8);
+            // Count the number of channels
+            uint64_t channelMask;
+            std::memcpy(&channelMask, l_data.data() + offset, 8);
+            const uint8_t nChannelsActive = popcount(channelMask);
+            if (nChannelsActive != 64){
+                logging("A board with a number of channels different from 64",Verbose::kError);
+            }
+            // now copy the payload
+            offset = 27;
+            unsigned int payload_size = l_data.size() - offset;
+            m_payload.reserve(payload_size);
+            m_payload.assign(l_data.begin() + offset, l_data.end());
+            logging("Now printing the payload", Verbose::kPedantic);
+            printToHex(m_payload.data(),payload_size);
             break;
+        }
         // The others are not implemented for the moment
         case AcquisitionMode::kCounting :
         case AcquisitionMode::kTiming:

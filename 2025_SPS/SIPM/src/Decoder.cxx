@@ -117,9 +117,7 @@ bool Decoder::ReadEvent()
         return false;
     } 
 
-    
-
-    // Read the next 11 characters to learn the event size in bytes (including these two characters)
+    // Read the next characters to learn the event size in bytes (including these two characters)
 
     std::array<char,2> l_eventSize;
     
@@ -128,7 +126,7 @@ bool Decoder::ReadEvent()
     int eventSize = (static_cast<unsigned char>(l_eventSize[1]) << 8) |
             static_cast<unsigned char>(l_eventSize[0]);
     
-    std::cout << "Event Size" << eventSize << std::endl;
+    std::cout << "Event Size " << eventSize << std::endl;
     
     // rewind by two bytes 
 

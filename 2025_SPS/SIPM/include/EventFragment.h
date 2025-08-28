@@ -10,7 +10,7 @@ class EventFragment
     public:
         EventFragment();
         ~EventFragment(){};
-        bool Read(std::vector<char>,AcquisitionMode l_acqMode);
+        bool Read(const std::vector<char> &,AcquisitionMode l_acqMode);
         void Reset();
         uint16_t m_eventSize;
         uint8_t m_boardID;
