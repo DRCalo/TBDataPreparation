@@ -31,6 +31,9 @@ void logging(const std::string& message, const Verbose level) {
     case Verbose::kError:
       std::cout << "[ERROR]:   " << message << std::endl;
       break;
+    case Verbose::kQuiet:
+      std::cout << message << std::endl; 
+
     }
   }
 }

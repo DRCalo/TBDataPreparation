@@ -20,8 +20,15 @@ Decoder::Decoder(std::string filename):
 
 Decoder::~Decoder()
 {
-    m_outfile->Write();
-    m_outfile->Close();
+  std::cout << "m_outfile " << m_outfile << " Is Open " << m_outfile->IsOpen() << std::endl;
+    if (m_outfile && m_outfile->IsOpen()) {
+        m_outfile->cd();
+        if (m_metadata)  m_metadata->Write("", TObject::kOverwrite);
+        if (m_datatree)  m_datatree->Write("", TObject::kOverwrite);
+        auto nbytes = m_outfile->Write();   // check return value
+        std::cout << "TFile::Write() returned " << nbytes << " bytes\n";
+        m_outfile->Close();
+    }
 }
 
 bool Decoder::ConnectFile(std::string filename)
@@ -57,11 +64,15 @@ bool Decoder::ConnectFile(std::string filename)
 bool Decoder::OpenOutput(std::string filename)
 {
     m_outfile = TFile::Open(filename.c_str(),"recreate");
-
-    if (!m_outfile){ 
+    printf("Open %s  -> IsZombie=%d IsOpen=%d IsWritable=%d Option=%s\n",
+	   filename.c_str(), m_outfile && m_outfile->IsZombie(), m_outfile && m_outfile->IsOpen(),
+       m_outfile && m_outfile->IsWritable(), m_outfile ? m_outfile->GetOption() : "(null)");
+    if (!m_outfile || m_outfile->IsZombie() || !m_outfile->IsOpen() || !m_outfile->IsWritable())
+      { 
         logging("Cannot open file " + filename + " for writing.", Verbose::kError);
-    }
-
+	return false;
+      }
+    
     m_outfile->cd();
     m_metadata = new TTree("RunMetaData","Info about the run for SiPMs");
     m_datatree = new TTree("SiPM_rawTree","Actual HiDRa SiPM data (no calibration)");

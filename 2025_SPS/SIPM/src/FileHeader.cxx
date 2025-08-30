@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include <sstream>
+
 FileHeader::FileHeader():
     m_dataFormat(""),
     m_software(""),
