@@ -8,6 +8,8 @@
 #include <string>
 #include <array>
 
+#include <fstream>
+
 /***************************************************
 ## \file FileHeader 
 ## \brief: interprets the header of the JANUS dat file 
@@ -23,7 +25,7 @@ class FileHeader
     public: 
     FileHeader();
     ~FileHeader(){};
-    bool Read(std::array<char,FILE_HEADER_SIZE> l_header);
+    bool Read(std::ifstream * l_inputfile);
     std::string m_dataFormat;
     std::string m_software;
     std::string m_boardType;

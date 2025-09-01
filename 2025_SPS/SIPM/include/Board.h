@@ -1,6 +1,7 @@
 #ifndef SIPMDECODER_BOARD_H
 #define SIPMDECODER_BOARD_H
 
+#include "hardcoded.h"
 #include "Channel.h"
 #include <array>
 
@@ -12,7 +13,7 @@ class Board
         Board();
         ~Board();
         uint8_t m_boardID;
-        std::array<Channel,64> m_channelList;
+        std::array<Channel,NCHANNELS> m_channelList;
 };
 
 #endif //#ifndef SIPMDECODER_BOARD_H

@@ -6,6 +6,9 @@
 #include <iostream>
 #include <iomanip>
 
+#include <cstdint>
+#include <cstring>   
+
 /***************************************************
 ## \file Helpers
 ## \brief: Helper functions used elsewhere 
@@ -28,6 +31,14 @@ inline uint8_t popcount(uint64_t x) {
     v++;
   }
   return v;
+}
+
+template <class T>
+inline T read_le(const uint8_t*& p) {
+    T v{};
+    std::memcpy(&v, p, sizeof(T));  // assume file encoding == little-endian and host is little-endian
+    p += sizeof(T);
+    return v;
 }
 
 

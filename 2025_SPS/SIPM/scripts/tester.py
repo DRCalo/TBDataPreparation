@@ -12,5 +12,5 @@ if (obj.ConnectFile("Run35.0_list.dat")):
     
     if (obj.OpenOutput("/tmp/gino.root")):
         obj.ReadFileHeader()
-        obj.ReadEvent()
+        obj.Read()
 

@@ -1,5 +1,6 @@
 #include "FileHeader.h"
 #include "Helpers.h"
+#include "hardcoded.h"
 
 // std includes 
 
@@ -9,6 +10,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <array>
 
 #include <sstream>
 
@@ -24,8 +26,20 @@ FileHeader::FileHeader():
     m_acqTime(0)
     {}
 
-bool FileHeader::Read(std::array<char,FILE_HEADER_SIZE> l_header)
+bool FileHeader::Read(std::ifstream * l_inputfile)
 {
+
+    std::array<char,FILE_HEADER_SIZE> l_header;
+
+    // Reading the header into an array of chars, then filling the class FileHeader with its contents
+
+    l_inputfile->read(l_header.data(),FILE_HEADER_SIZE);
+
+    logging("Now printing the raw hex content of the header\n",Verbose::kPedantic);
+
+    printToHex(l_header.data(),l_header.size());
+
+    logging("Interpreting header\n",Verbose::kPedantic);
     // Interpreting the header and filling the corresponding variables in the class
 
     // Clearly this depends on teh version of the software used - This has been written 

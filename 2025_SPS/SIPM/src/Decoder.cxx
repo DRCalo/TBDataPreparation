@@ -81,23 +81,14 @@ bool Decoder::OpenOutput(std::string filename)
 
 bool Decoder::ReadFileHeader()
 {
-    std::array<char,FILE_HEADER_SIZE> l_header;
-
-    // Reading the header into an array of chars, then filling the class FileHeader with its contents
-
-    m_inputfile->read(l_header.data(),FILE_HEADER_SIZE);
-
-    logging("Now printing the raw hex content of the header\n",Verbose::kPedantic);
-
-    printToHex(l_header.data(),l_header.size());
-
-    logging("Now filling header class and interpreting header\n",Verbose::kPedantic);
     
-    if (!m_fheader.Read(l_header)){
+    if (!m_fheader.Read(m_inputfile)){
         logging("Something wrong with reading the file header",Verbose::kError);
         return false;
     }
    
+    m_event.SetAcquisitionMode(static_cast<AcquisitionMode>(m_fheader.m_acqMode));
+
     // Now writing the header to a root file 
    
     m_metadata->Branch("dataFormat", &m_fheader.m_dataFormat);
@@ -118,66 +109,31 @@ bool Decoder::ReadFileHeader()
     return true;
 }
 
-bool Decoder::ReadEvent()
+bool Decoder::Read()
 {
-
-    // Check if we are in Timing mode (which would imply no TriggerID)
 
     if (m_fheader.m_acqMode == 0){
         logging("m_acqMode cannot be zero - file header not correctly read",Verbose::kError);
         return false;
     } 
 
-    // Read the next characters to learn the event size in bytes (including these two characters)
-
-    std::array<char,2> l_eventSize;
-    
-    m_inputfile->read(l_eventSize.data(),2);
-
-    int eventSize = (static_cast<unsigned char>(l_eventSize[1]) << 8) |
-            static_cast<unsigned char>(l_eventSize[0]);
-    
-    std::cout << "Event Size " << eventSize << std::endl;
-    
-    // rewind by two bytes 
-
-    m_inputfile->seekg(-2, std::ios::cur);
-    
-  
-    uint64_t l_triggerID = 0;
-
-    std::streampos currentPos;
-    if (static_cast<AcquisitionMode>(m_fheader.m_acqMode) != AcquisitionMode::kTiming){
-        // we will have a trigger ID - use that to collect all boards related to this event. 
-        // Now get it and then rewind the event to current position
-        currentPos = m_inputfile->tellg();
-        // Move forward 3 bytes from here
-        m_inputfile->seekg(currentPos + std::streamoff(3));
-        // Read the 8-byte number
-        m_inputfile->read(reinterpret_cast<char*>(&l_triggerID), sizeof(l_triggerID));
-        // Restore the original position
-        m_inputfile->seekg(currentPos);
-    }
-
-    // Now start reading 
-
-    bool addEventFragment = true;
-    while (addEventFragment){
-        // Remmember the current position
-        currentPos = m_inputfile->tellg();
-        std::vector<char> l_data(eventSize);
-        m_inputfile->read(l_data.data(),eventSize);
-        // now decode the event fragment
-        EventFragment l_ev_fragment;
-        if (!l_ev_fragment.Read(l_data,static_cast<AcquisitionMode>(m_fheader.m_acqMode))){
-            logging ("Something went wrong with the event reading", Verbose::kError);
+    while (m_inputfile->good()){
+        if (m_inputfile->peek() == EOF) {
+            logging("End of file reached",Verbose::kInfo);
+            //break;
+        }   
+        if (!m_event.ReadEvent(m_inputfile)){
+            logging("Something whent seriously wrong when reading an event",Verbose::kError);
             return false;
         }
-        addEventFragment = false;
-    }
+    }   
         
-   
-    
+    return true;
+}
+
+bool Decoder::ReadEvent()
+{
+    std::cout <<"Decoder::ReadEvent not implemented " << std::endl;
     return true;
 }
 

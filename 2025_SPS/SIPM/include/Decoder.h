@@ -3,7 +3,7 @@
 
 #include <hardcoded.h>
 #include "FileHeader.h"
-#include "EventFragment.h"
+#include "SiPMEvent.h"
 
 // stl includes
 
@@ -39,12 +39,12 @@ class Decoder
         // I am naming the functions below following a physical terminology
         // An "event" for me is one acquisition from all boards all corresponding to a given trigger ID
         // I will call an "Event Fragment" what Janus calls an event. It will be composed by an EventHeader and a payload. 
+        bool Read();
         bool ReadEvent();
-    private: 
-
         // The dat input file itself 
 
         std::ifstream * m_inputfile;
+    private: 
 
         // The root output file
 
@@ -62,9 +62,9 @@ class Decoder
 
         FileHeader m_fheader;
 
-        // The class representing the event header for each event with the same trigID
+        // The class representing the event (all fragments with the same Trigger ID)
 
-        std::vector<EventFragment> m_ev_fragment;
+        SiPMEvent m_event;
 
         // The input file name (kept for reference, although not really needed)
 

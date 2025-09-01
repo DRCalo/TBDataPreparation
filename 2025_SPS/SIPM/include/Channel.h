@@ -11,6 +11,7 @@ class Channel
     public: 
         Channel();
         ~Channel();
+        void Reset();
         uint8_t m_channelID;
         uint16_t m_HG;
         uint16_t m_LG;

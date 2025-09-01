@@ -18,7 +18,7 @@ enum class Verbose { kQuiet, kError, kWarn, kInfo, kPedantic };
 enum class AcquisitionMode { kSpectroscopy = 1, kTiming, kSpectroscopyTiming, kCounting };
 
 // Maximum number of boards (in this case 5 boards used at test beam)
-static constexpr uint8_t MAX_BOARDS = 5;
+static constexpr uint8_t MAX_BOARDS = 20;
 // Number of channels read out by each board
 static constexpr uint8_t NCHANNELS = 64;
 // Size on the file header (14 bytes as per CAEN manual)
@@ -50,3 +50,9 @@ static constexpr uint8_t MAPPING_LUT[] = {
     30, 54, 22, 62, // 56 - 59
     31, 55, 23, 63  // 60 - 63
 };
+
+// Bit flags
+constexpr uint8_t CHTYPE_HAS_HG  = 0x01;
+constexpr uint8_t CHTYPE_HAS_LG  = 0x02;
+constexpr uint8_t CHTYPE_HAS_TOA = 0x10;
+constexpr uint8_t CHTYPE_HAS_TOT = 0x20;
