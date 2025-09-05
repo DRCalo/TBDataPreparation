@@ -4,6 +4,7 @@
 #include <hardcoded.h>
 #include "FileHeader.h"
 #include "SiPMEvent.h"
+#include "Helpers.h"
 
 // stl includes
 
@@ -40,7 +41,9 @@ class Decoder
         // An "event" for me is one acquisition from all boards all corresponding to a given trigger ID
         // I will call an "Event Fragment" what Janus calls an event. It will be composed by an EventHeader and a payload. 
         bool Read();
-        bool ReadEvent();
+        bool EventToOutput();
+        
+        void SetVerbosity(unsigned int level = 3);
         // The dat input file itself 
 
         std::ifstream * m_inputfile;

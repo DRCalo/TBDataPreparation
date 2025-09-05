@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <cassert>
 
+
 #include "Helpers.h"
 
 static_assert(sizeof(double) == 8, "This code requires 8-byte doubles");
@@ -25,7 +26,7 @@ SiPMEventFragment::SiPMEventFragment():
 void SiPMEventFragment::Reset()
 {
     m_eventSize = 0;
-    m_boardID = 0;
+    m_boardID = 0xFF;
     m_timeStamp = 0;
     m_triggerID = 0;
 
@@ -33,12 +34,10 @@ void SiPMEventFragment::Reset()
         m_channelMask[i] = '0';
     }
 
-    for (unsigned int i = 0; i < NCHANNELS; ++i)
-    {
-        m_channels[i].Reset();
-    }
-
-    m_payload.clear();
+    m_HG.fill(0);
+    m_LG.fill(0);
+    m_ToA.fill(0.0f);
+    m_ToT.fill(0.0f);
 }
 
 bool SiPMEventFragment::ReadCounting(const std::vector<char>& l_data)
@@ -55,86 +54,100 @@ bool SiPMEventFragment::ReadTiming(const std::vector<char>& l_data)
 
 bool SiPMEventFragment::ReadSpectroscopy(const std::vector<char>& l_data)
 {
-    logging("Acquisition modes different from kSpectroscopyTiming are not implemented yet",Verbose::kError);
+    // Spectroscopy is identical to Spectroscopy & Timing - the only difference is in the payload. 
+    ReadSpectroscopyTiming(l_data);
     return false;
 }
 
-bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data)
+bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, int l_timeUnit, float l_conversion)
 {
-    std::size_t offset = 0;
-    m_eventSize = (static_cast<unsigned char>(l_data[1]) << 8) |
-    static_cast<unsigned char>(l_data[0]);
-    m_boardID = static_cast<uint8_t>(l_data[2]);
-    offset = 3;
-    std::memcpy(&m_timeStamp, l_data.data() + offset, sizeof(m_timeStamp));
-    offset = 11;
-    std::memcpy(&m_triggerID, l_data.data() + offset, sizeof(m_triggerID));
-    /*m_triggerID = (uint64_t)l_data[11] |
-                        ((uint64_t)l_data[12] << 8) |
-                        ((uint64_t)l_data[13] << 16) |
-                        ((uint64_t)l_data[14] << 24) |
-                        ((uint64_t)l_data[15] << 32) |
-                        ((uint64_t)l_data[16] << 40) |
-                        ((uint64_t)l_data[17] << 48) |
-                        ((uint64_t)l_data[18] << 56);*/
-    offset = 19;
-    std::memcpy(m_channelMask, l_data.data() + offset, 8);
+    const uint8_t* p = reinterpret_cast<const uint8_t*>(l_data.data());
+    //m_eventSize = (static_cast<unsigned char>(l_data[1]) << 8) |
+    //static_cast<unsigned char>(l_data[0]);
+    read_le<uint16_t>(&m_eventSize,p);
+    read_le<uint8_t>(&m_boardID,p);
+    read_le<double>(&m_timeStamp,p);
+    read_le<uint64_t>(&m_triggerID,p);
+    static uint64_t channelMask;
+    read_le<uint64_t>(&channelMask,p);
+
     logging("The event header is ",Verbose::kPedantic);
     logging("m_eventSize =  " + std::to_string(m_eventSize),Verbose::kPedantic);
     logging("m_boardID =  " + std::to_string(m_boardID),Verbose::kPedantic);
     logging("m_timeStamp =  " + std::to_string(m_timeStamp),Verbose::kPedantic);
     logging("m_triggerID =  " + std::to_string(m_triggerID),Verbose::kPedantic);
+    
+    std::memcpy(m_channelMask, &channelMask, 8);
+
     printToHex(m_channelMask,8);
-    // Count the number of channels
-    uint64_t channelMask;
-    std::memcpy(&channelMask, l_data.data() + offset, 8);
+    
     const uint8_t nChannelsActive = popcount(channelMask);
-    if (nChannelsActive != 64){
+    if (nChannelsActive != NCHANNELS){
         logging("A board with a number of channels different from 64",Verbose::kError);
     }
-    assert(nChannelsActive == 64); // let the code crash if something unexpected happens here, might be eased off once we have some statistics
+    assert(nChannelsActive == NCHANNELS); // let the code crash if something unexpected happens here, might be eased off once we have some statistics
 
 
     // now work on the payload
-    offset = 27;
     static uint8_t chtype;
     chtype = 0;
-    const uint8_t* p = reinterpret_cast<const uint8_t*>(l_data.data() + offset);
+    
+    static uint8_t chID;
+    static uint32_t i_ToA=0;
+    static uint16_t i_ToT=0;
     for (uint8_t n_ch = 0; n_ch < nChannelsActive; ++n_ch){
-      
         // read the payload byte by byte 
-        m_channels[n_ch].m_channelID = read_le<uint8_t>(p);
+        read_le<uint8_t>(&chID,p);
         // now read the type and interpret it;
-        chtype = read_le<uint8_t>(p);
+        read_le<uint8_t>(&chtype,p);
         // Interpret the type
-        std::cout << "channel type Hex: 0x" << std::hex << std::uppercase
-              << static_cast<int>(chtype) << "\n";
+        logging("Channel type Hex",Verbose::kPedantic);
+        printToHex(reinterpret_cast<const char*>(&chtype),1);
 
-        // Reset back to decimal if you want normal printing afterward:
-        std::cout << std::dec;
-        if (chtype & CHTYPE_HAS_HG)  m_channels[n_ch].m_HG  = read_le<uint16_t>(p);
-        if (chtype & CHTYPE_HAS_LG)  m_channels[n_ch].m_LG  = read_le<uint16_t>(p);
-        if (chtype & CHTYPE_HAS_TOA) m_channels[n_ch].m_ToA  = read_le<uint32_t>(p); // more work to be done here
-        if (chtype & CHTYPE_HAS_TOT) m_channels[n_ch].m_ToT  = read_le<uint16_t>(p); // more work to be done here
-        logging("Channel " + std::to_string(m_channels[n_ch].m_channelID) + ": HG " + std::to_string(m_channels[n_ch].m_HG)
-                                                                        + "; LG " + std::to_string(m_channels[n_ch].m_LG)
-                                                                        + "; ToA " + std::to_string(m_channels[n_ch].m_ToA)
-                                                                        + "; ToT " + std::to_string(m_channels[n_ch].m_ToT),
+        if (chtype & CHTYPE_HAS_HG)  read_le<uint16_t>(&m_HG[chID],p);
+        if (chtype & CHTYPE_HAS_LG)  read_le<uint16_t>(&m_LG[chID],p);
+        if (l_timeUnit == 0){ // Depending on the value of the timeUnit read from the file header, the ToA and ToT are stored as float or as int)
+            if (chtype & CHTYPE_HAS_TOA) {
+                read_le<uint32_t>(&i_ToA,p);
+                m_ToA[chID]  = l_conversion * float(i_ToA);
+            }
+            if (chtype & CHTYPE_HAS_TOT) {
+                read_le<uint16_t>(&i_ToT,p);
+                m_ToT[chID]  = l_conversion * float(i_ToT);
+            }
+        } else if (l_timeUnit == 1) { 
+            if (chtype & CHTYPE_HAS_TOA) read_le<float>(&m_ToA[chID],p); 
+            if (chtype & CHTYPE_HAS_TOT) read_le<float>(&m_ToT[chID],p); 
+        }
+
+/*                if (chtype & CHTYPE_HAS_HG)  read_le<uint16_t>(&m_HG[chID],p);
+        if (chtype & CHTYPE_HAS_LG)  m_LG[chID]  = read_le<uint16_t>(&m_LG,p);
+        if (l_timeUnit == 0){ // Depending on the value of the timeUnit read from the file header, the ToA and ToT are stored as float or as int)
+            if (chtype & CHTYPE_HAS_TOA) m_ToA[chID]  = l_conversion * read_le<uint32_t>(p); 
+            if (chtype & CHTYPE_HAS_TOT) m_ToT[chID]  = l_conversion * read_le<uint16_t>(p); 
+        } else if (l_timeUnit == 1) { 
+            if (chtype & CHTYPE_HAS_TOA) m_ToA[chID]  = read_le<float>(p); 
+            if (chtype & CHTYPE_HAS_TOT) m_ToT[chID]  = read_le<float>(p); 
+        } // if l_timeUnit == -1 we are not in SpectrpscopyTiming mode, and nothing shoudl be done */
+    logging("Channel " + std::to_string(chID) + ": HG " + std::to_string(m_HG[chID])
+                                                                        + "; LG " + std::to_string(m_LG[chID])
+                                                                        + "; ToA " + std::to_string(m_ToA[chID])
+                                                                        + "; ToT " + std::to_string(m_ToT[chID]),
     Verbose::kPedantic);
     }
 
     return true;
 }
 
- bool SiPMEventFragment::Read(const std::vector<char>& l_data,AcquisitionMode l_acqMode)
+ bool SiPMEventFragment::Read(const std::vector<char>& l_data, const FileHeader & l_fileheader )
  {
     static bool retval;
     retval = false;
     this->Reset();
    
-    switch(l_acqMode){
+    switch(static_cast<AcquisitionMode>(l_fileheader.m_acqMode)){
         case AcquisitionMode::kSpectroscopyTiming:
-            retval = ReadSpectroscopyTiming(l_data);
+            retval = ReadSpectroscopyTiming(l_data,l_fileheader.m_timeUnit,l_fileheader.m_ToAToT_conv);
             break;
         // The others are not implemented for the moment
         case AcquisitionMode::kCounting :
@@ -148,7 +161,7 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data)
             break;
         default:
             logging("EventFragment::Read something went wrong.",Verbose::kError);
-            logging("Don't know what to do with an AcquisitionMode value " + std::to_string(static_cast<int>(l_acqMode)), Verbose::kError); 
+            logging("Don't know what to do with an AcquisitionMode value " + std::to_string(l_fileheader.m_acqMode), Verbose::kError); 
             retval = false;           
     }   
     return retval;

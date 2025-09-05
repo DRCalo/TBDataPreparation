@@ -31,6 +31,10 @@ Decoder::~Decoder()
     }
 }
 
+void Decoder::SetVerbosity(unsigned int level){
+    g_setVerbosity(static_cast<Verbose>(level));
+}
+
 bool Decoder::ConnectFile(std::string filename)
 {
     if (!filename.empty()) m_filename = filename;
@@ -76,6 +80,15 @@ bool Decoder::OpenOutput(std::string filename)
     m_outfile->cd();
     m_metadata = new TTree("RunMetaData","Info about the run for SiPMs");
     m_datatree = new TTree("SiPM_rawTree","Actual HiDRa SiPM data (no calibration)");
+
+    // Prepare the structure of the SiPM_rawTree
+
+    m_datatree->Branch("TrigID",&m_event.m_triggerID);  
+    m_datatree->Branch("SiPM_HG",&m_event.m_HG);  
+    m_datatree->Branch("SiPM_LG",&m_event.m_LG);  
+    m_datatree->Branch("SiPM_ToA",&m_event.m_ToA);  
+    m_datatree->Branch("SiPM_ToT",&m_event.m_ToT);  
+
     return true;
 }
 
@@ -86,8 +99,6 @@ bool Decoder::ReadFileHeader()
         logging("Something wrong with reading the file header",Verbose::kError);
         return false;
     }
-   
-    m_event.SetAcquisitionMode(static_cast<AcquisitionMode>(m_fheader.m_acqMode));
 
     // Now writing the header to a root file 
    
@@ -117,25 +128,24 @@ bool Decoder::Read()
         return false;
     } 
 
+
     while (m_inputfile->good()){
         if (m_inputfile->peek() == EOF) {
             logging("End of file reached",Verbose::kInfo);
             //break;
         }   
-        if (!m_event.ReadEvent(m_inputfile)){
+        if (!m_event.ReadEvent(m_inputfile, m_fheader)){
             logging("Something whent seriously wrong when reading an event",Verbose::kError);
             return false;
         }
+        m_event.BuildEvent();
+        m_datatree->Fill();
     }   
         
     return true;
 }
 
-bool Decoder::ReadEvent()
-{
-    std::cout <<"Decoder::ReadEvent not implemented " << std::endl;
-    return true;
-}
+
 
 
 

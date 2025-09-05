@@ -4,6 +4,9 @@
 #include <array>
 #include <fstream>
 
+#include "hardcoded.h"
+
+#include "FileHeader.h"
 #include "SiPMEventFragment.h"
 
 class SiPMEvent
@@ -15,15 +18,20 @@ class SiPMEvent
         SiPMEvent();
         ~SiPMEvent();
         void Reset();
-        bool ReadEvent(std::ifstream * l_inputfile);
+        bool ReadEvent(std::ifstream * l_inputfile, const FileHeader & l_fileheader);
+        bool BuildEvent();
         long GetNextTriggerID(std::ifstream * l_inputfile);
-        void SetAcquisitionMode(AcquisitionMode l_acqMode) {m_acqMode = l_acqMode;}
+        long m_triggerID;
+        double m_timeStamp;
+
+        std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_HG;
+        std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_LG;
+        std::array<float,MAX_BOARDS*NCHANNELS> m_ToA;
+        std::array<float,MAX_BOARDS*NCHANNELS> m_ToT;
+
     private:
-    std::array<SiPMEventFragment,20> m_fragments;
-    long m_triggerID;
-    AcquisitionMode m_acqMode;
-
-
+    std::array<SiPMEventFragment,MAX_BOARDS> m_fragments;
+    
 };
 
 #endif //#ifndef SIPMDECODER_SIPMEVENT_H

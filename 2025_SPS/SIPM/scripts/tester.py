@@ -8,9 +8,12 @@ ROOT.gSystem.Load("libSiPMConverter")
 
 # Now you can use your C++ API from Python:
 obj = ROOT.Decoder()
+obj.SetVerbosity(4)
+# Remember:  enum class Verbose { kQuiet, kError, kWarn, kInfo, kPedantic };
+
 if (obj.ConnectFile("Run35.0_list.dat")):
     
-    if (obj.OpenOutput("/tmp/gino.root")):
+    if (obj.OpenOutput("output.root")):
         obj.ReadFileHeader()
         obj.Read()
 

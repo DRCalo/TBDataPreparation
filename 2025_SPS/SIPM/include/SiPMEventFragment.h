@@ -2,10 +2,12 @@
 #define SIPMDECODER_SIPMEVENTFRAGMENT_H
 
 #include "Channel.h"
+#include "FileHeader.h"
 #include "hardcoded.h"
 
 #include <array>
 #include <vector>
+
 
 
 class SiPMEventFragment
@@ -13,22 +15,24 @@ class SiPMEventFragment
     public:
         SiPMEventFragment();
         ~SiPMEventFragment(){};
-        bool Read(const std::vector<char> &,AcquisitionMode l_acqMode);
+        bool Read(const std::vector<char> &, const FileHeader & l_fileheader);
         void Reset();
         uint16_t m_eventSize;
         uint8_t m_boardID;
         double m_timeStamp;
         uint64_t m_triggerID;
         char m_channelMask[8];
-        Channel * GetChannelPointer(unsigned int channel_number) {return &m_channels[channel_number];}
-        std::vector<char> m_payload;
+
+        std::array<uint16_t,NCHANNELS> m_HG;
+        std::array<uint16_t,NCHANNELS> m_LG;
+        std::array<float,NCHANNELS> m_ToA;
+        std::array<float,NCHANNELS> m_ToT;
 
     private: 
         bool ReadSpectroscopy(const std::vector<char> &);
-        bool ReadSpectroscopyTiming(const std::vector<char> &);
+        bool ReadSpectroscopyTiming(const std::vector<char> &,int l_timeUnit = -1,float l_conversion = -1.);
         bool ReadTiming(const std::vector<char> &);
         bool ReadCounting(const std::vector<char> &);
-        std::array<Channel,NCHANNELS> m_channels;
 
 };
 

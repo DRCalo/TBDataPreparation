@@ -1,6 +1,6 @@
 #include "Helpers.h"
 
-Verbose VERBOSE = Verbose::kPedantic;
+Verbose VERBOSE = Verbose::kInfo;
 
 void printToHex(const char* data, std::size_t n)
 {
@@ -15,6 +15,8 @@ void printToHex(const char* data, std::size_t n)
   }
 }
     
+void g_setVerbosity(const Verbose level)
+{VERBOSE = level;}
 
 void logging(const std::string& message, const Verbose level) {
   if ((int)level <= (int)VERBOSE || VERBOSE == Verbose::kPedantic) {
