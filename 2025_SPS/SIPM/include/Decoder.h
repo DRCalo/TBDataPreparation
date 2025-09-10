@@ -31,17 +31,15 @@ class Decoder
     public:    
         Decoder(std::string filename = "");
         ~Decoder();
-        bool ConnectFile(std::string filename="");
-        bool OpenOutput(std::string fname = "output.root");
-        bool ReadFileHeader();
+        bool ConnectFile(std::string filename=""); // opens input file 
+        bool OpenOutput(std::string fname = "output.root"); // opens output file
+        bool ReadFileHeader(); // reads the file header and creates the metadata tree
         // Terminology is important. For Janus, and "event" is one acquisition on one board. 
         // So, teh same physical trigger read out on 4 board is 4 events. 
         // I am naming the functions below following a physical terminology
         // An "event" for me is one acquisition from all boards all corresponding to a given trigger ID
         // I will call an "Event Fragment" what Janus calls an event. It will be composed by an EventHeader and a payload. 
-        bool Read();
-        bool EventToOutput();
-        bool IsSequential();
+        bool Read(); // reads the actual events and creates the SiPM tree 
         void SetVerbosity(unsigned int level = 3);
         // The dat input file itself 
 

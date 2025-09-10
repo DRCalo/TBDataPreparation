@@ -15,6 +15,8 @@
 #include <vector>
 #include <limits>
 
+#include "SiPMEvent.h"
+
 /***************************************************
 ## \file FileInfo 
 ## \brief: interprets the header of the JANUS dat file 
@@ -25,6 +27,8 @@
 ## \start date: 10 August 2025
 ##
 ##***************************************************/
+
+typedef std::map<long, std::vector<std::uint64_t>> TrigIndexMap;
 
 class FileInfo
 {
@@ -42,19 +46,21 @@ class FileInfo
     uint8_t m_timeUnit;
     float m_ToAToT_conv;
     uint64_t m_acqTime;
+    bool ReadTrigID(long trigID, SiPMEvent & l_event);
     long GetNextTriggerID();
     uint16_t GetEventSize();
-    bool FindTrigID();
+    bool BuildTrigIDMap();
     std::ifstream * InputFile() {return &m_inputfile;}
     bool OpenFile(std::string filename);
+    const TrigIndexMap & GetIndexMap() const {return m_index;}
 
-    std::map<long, std::vector<std::uint64_t>> m_index;
 
     private: 
         // a pointer to the input file
         std::ifstream m_inputfile;
         std::string m_filename;
         uint64_t m_filesize;
+        TrigIndexMap m_index;
     
     
 };

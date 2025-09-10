@@ -120,34 +120,27 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
             if (chtype & CHTYPE_HAS_TOT) read_le<float>(&m_ToT[chID],p); 
         }
 
-/*                if (chtype & CHTYPE_HAS_HG)  read_le<uint16_t>(&m_HG[chID],p);
-        if (chtype & CHTYPE_HAS_LG)  m_LG[chID]  = read_le<uint16_t>(&m_LG,p);
-        if (l_timeUnit == 0){ // Depending on the value of the timeUnit read from the file header, the ToA and ToT are stored as float or as int)
-            if (chtype & CHTYPE_HAS_TOA) m_ToA[chID]  = l_conversion * read_le<uint32_t>(p); 
-            if (chtype & CHTYPE_HAS_TOT) m_ToT[chID]  = l_conversion * read_le<uint16_t>(p); 
-        } else if (l_timeUnit == 1) { 
-            if (chtype & CHTYPE_HAS_TOA) m_ToA[chID]  = read_le<float>(p); 
-            if (chtype & CHTYPE_HAS_TOT) m_ToT[chID]  = read_le<float>(p); 
-        } // if l_timeUnit == -1 we are not in SpectrpscopyTiming mode, and nothing shoudl be done */
-    logging("Channel " + std::to_string(chID) + ": HG " + std::to_string(m_HG[chID])
+        logging("Channel " + std::to_string(chID) + ": HG " + std::to_string(m_HG[chID])
                                                                         + "; LG " + std::to_string(m_LG[chID])
                                                                         + "; ToA " + std::to_string(m_ToA[chID])
                                                                         + "; ToT " + std::to_string(m_ToT[chID]),
-    Verbose::kPedantic);
+                                                                        Verbose::kPedantic);
     }
 
     return true;
 }
 
- bool SiPMEventFragment::Read(const std::vector<char>& l_data, FileInfo & l_fileinfo )
+ bool SiPMEventFragment::Read(const std::vector<char>& l_data, AcquisitionMode l_acqMode,  int l_timeUnit,float l_conversion)
  {
     static bool retval;
     retval = false;
     this->Reset();
    
-    switch(static_cast<AcquisitionMode>(l_fileinfo.m_acqMode)){
+    switch(l_acqMode){
         case AcquisitionMode::kSpectroscopyTiming:
-            retval = ReadSpectroscopyTiming(l_data,l_fileinfo.m_timeUnit,l_fileinfo.m_ToAToT_conv);
+            retval = ReadSpectroscopyTiming(l_data,l_timeUnit,l_conversion);
+            std::cout << "We are here" << std::endl;
+            std::cout << "retval = " << retval << std::endl;
             break;
         // The others are not implemented for the moment
         case AcquisitionMode::kCounting :
@@ -161,8 +154,9 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
             break;
         default:
             logging("EventFragment::Read something went wrong.",Verbose::kError);
-            logging("Don't know what to do with an AcquisitionMode value " + std::to_string(l_fileinfo.m_acqMode), Verbose::kError); 
+            logging("Don't know what to do with an AcquisitionMode value " + std::to_string(static_cast<uint16_t>(l_acqMode)), Verbose::kError); 
             retval = false;           
     }   
+    std::cout << "Prima di uscire retval = " << retval << std::endl;
     return retval;
  }

@@ -6,7 +6,6 @@
 
 #include "hardcoded.h"
 
-#include "FileInfo.h"
 #include "SiPMEventFragment.h"
 
 class SiPMEvent
@@ -18,9 +17,11 @@ class SiPMEvent
         SiPMEvent();
         ~SiPMEvent();
         void Reset();
-        bool ReadEvent(FileInfo & l_fileinfo);
+        //bool ReadEvent(FileInfo & l_fileinfo);
+        bool ReadEventFragment(const std::vector<char> & l_data, AcquisitionMode l_acqMode,int l_timeUnit,float l_conversion);
         long m_triggerID;
         double m_timeStamp;
+        SiPMEventFragment & EvtFragment() {return m_fragment;}
 
         std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_HG;
         std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_LG;

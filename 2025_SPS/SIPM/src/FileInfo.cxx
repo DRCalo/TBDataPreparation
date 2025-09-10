@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdint>
+#include <cassert>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -163,7 +164,7 @@ bool FileInfo::ReadHeader()
     return true;
 }
 
-bool FileInfo::FindTrigID()
+bool FileInfo::BuildTrigIDMap()
 {
     std::streampos initialPos = m_inputfile.tellg();
     
@@ -245,4 +246,39 @@ uint16_t FileInfo::GetEventSize()
 
     m_inputfile.seekg(-2, std::ios::cur);
     return eventSize;
+}
+
+bool FileInfo::ReadTrigID(long trigID, SiPMEvent & l_event)
+{
+    if (m_index.find(trigID) == m_index.end()){
+        logging("Cannot find trigger ID " + std::to_string(trigID) + " in m_index.", Verbose::kError);
+        return false;
+    }
+    l_event.Reset();
+    l_event.m_triggerID = trigID;
+    
+    static uint16_t fragmentCounter;
+    static uint16_t eventSize;
+
+    std::vector<std::uint64_t> & l_startingPoints = m_index[trigID];
+
+    for (uint64_t evIn : l_startingPoints){
+        fragmentCounter = 0;
+        m_inputfile.seekg(evIn, std::ios::beg);
+        eventSize = GetEventSize();
+        std::streampos currentPos = m_inputfile.tellg();
+        std::vector<char> l_data(eventSize);
+        m_inputfile.read(l_data.data(),eventSize);
+        assert(fragmentCounter < MAX_BOARDS); // fragmentCounter should never get bigger than the maximum number of boards - or we don't understand something 
+        if (!l_event.ReadEventFragment(l_data,static_cast<AcquisitionMode>(m_acqMode),m_timeUnit,m_ToAToT_conv)){
+            logging ("FileInfo: Something went wrong with the event reading", Verbose::kError);
+            return false;
+        }
+
+        ++fragmentCounter;
+    }
+
+    logging("triggerID " + std::to_string(trigID) + " Read " + std::to_string(fragmentCounter +1) + " boards",Verbose::kPedantic);
+
+    return true;
 }

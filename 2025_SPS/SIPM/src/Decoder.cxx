@@ -96,34 +96,42 @@ bool Decoder::ReadFileHeader()
 
 bool Decoder::Read()
 {
+    if (m_finfo.m_dataFormat.empty()){// The file header was not read
+        logging("It appears that the input file header was not read. Doing it now.",Verbose::kWarn);
+        if (!this->ReadFileHeader()){
+            return false;
+        }
+    }
+
+    if (!m_outfile || !m_datatree){
+        logging("Decoder: the pointers to output file or tree is zero, did you call OpenOutput", Verbose::kError);
+        return false;
+    }
 
     if (m_finfo.m_acqMode == 0){
         logging("m_acqMode cannot be zero - file header not correctly read",Verbose::kError);
         return false;
     } 
 
-    while (m_finfo.InputFile()->good()){
-        if (m_finfo.InputFile()->peek() == EOF) {
-            logging("End of file reached",Verbose::kInfo);
-            break;
-        }   
-        if (!m_event.ReadEvent(m_finfo)){
-            logging("Something whent seriously wrong when reading an event",Verbose::kError);
+    if (!m_finfo.BuildTrigIDMap()){ 
+        // Quickly scanning the input file and building the map of the trigIDs 
+        // and to what fragments they correspond
+        logging("Problem in building the trigID map", Verbose::kError);
+        return false;
+    }
+    
+    for (const auto& pair : m_finfo.GetIndexMap()) {
+        // Now looping on the trigIDs and actually reading the events
+        if (!m_finfo.ReadTrigID(pair.first,m_event)){
+            logging("Cannot correctly read fragments in TrigID " + std::to_string(pair.first),Verbose::kError);
             return false;
         }
-        
+        // Once the event is built, fill the output tree
         m_datatree->Fill();
-    }   
+    }
         
     return true;
 }
-
-bool Decoder::IsSequential()
-{
-    m_finfo.FindTrigID();
-    return true;
-}
-
 
 
 
