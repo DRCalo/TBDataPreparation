@@ -15,5 +15,6 @@ if (obj.ConnectFile("Run35.0_list.dat")):
     
     if (obj.OpenOutput("output.root")):
         obj.ReadFileHeader()
-        obj.Read()
+        obj.IsSequential()
+        #obj.Read()
 

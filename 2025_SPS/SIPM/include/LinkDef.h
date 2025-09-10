@@ -5,7 +5,5 @@
 
 // Expose your classes/structs to PyROOT:
 #pragma link C++ class Decoder+;   // the '+' generates I/O dict if ClassDef is used
-#pragma link C++ class Channel+;  
-#pragma link C++ class Board+;  
 //#pragma link C++ class std::array<Channel,64>+; // example if you need STL containers
 #endif

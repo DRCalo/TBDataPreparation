@@ -1,4 +1,4 @@
-#include "FileHeader.h"
+#include "FileInfo.h"
 #include "Helpers.h"
 #include "hardcoded.h"
 
@@ -14,7 +14,7 @@
 
 #include <sstream>
 
-FileHeader::FileHeader():
+FileInfo::FileInfo():
     m_dataFormat(""),
     m_software(""),
     m_boardType(""),
@@ -23,17 +23,53 @@ FileHeader::FileHeader():
     m_enHistoBin(0),
     m_timeUnit(0),
     m_ToAToT_conv(0),
-    m_acqTime(0)
+    m_acqTime(0),
+    m_inputfile(NULL),
+    m_filename(""),
+    m_filesize(0)
     {}
 
-bool FileHeader::Read(std::ifstream * l_inputfile)
+bool FileInfo::OpenFile(std::string filename)
+{
+    m_filename = filename;
+    if (m_inputfile.is_open()){
+        logging("Error in Decoder::ConnectFile - a file is already connected", Verbose::kError);
+        return false;
+    }
+
+    std::ifstream inputStream(m_filename, std::ios::binary | std::ios::ate);
+    logging("Opening file: " + m_filename, Verbose::kInfo);
+
+    if (!inputStream) {
+        logging("Cannot open file: " + m_filename, Verbose::kError);
+        return false;
+    }
+
+    m_filesize = static_cast<uint64_t>(inputStream.tellg());
+    std::cout << m_filesize << std::endl;
+
+    inputStream.close();
+    if (inputStream.is_open()) {
+        logging("Cannot close file file: " + m_filename, Verbose::kError);
+        return false;
+    } 
+
+    logging("File size: " + std::to_string(m_filesize / (1024 * 1024)) + " MiB", Verbose::kInfo);
+    m_inputfile.open(m_filename, std::ios::binary);
+
+    return true;
+}
+
+
+
+bool FileInfo::ReadHeader()
 {
 
     std::array<char,FILE_HEADER_SIZE> l_header;
 
     // Reading the header into an array of chars, then filling the class FileHeader with its contents
 
-    l_inputfile->read(l_header.data(),FILE_HEADER_SIZE);
+    m_inputfile.read(l_header.data(),FILE_HEADER_SIZE);
 
     logging("Now printing the raw hex content of the header\n",Verbose::kPedantic);
 
@@ -42,7 +78,7 @@ bool FileHeader::Read(std::ifstream * l_inputfile)
     logging("Interpreting header\n",Verbose::kPedantic);
     // Interpreting the header and filling the corresponding variables in the class
 
-    // Clearly this depends on teh version of the software used - This has been written 
+    // Clearly this depends on the version of the software used - This has been written 
     // based on the version data format 3.3 and software version 4.2.0
 
     unsigned df1 = static_cast<unsigned>(static_cast<unsigned char>(l_header[0]));
@@ -125,4 +161,88 @@ bool FileHeader::Read(std::ifstream * l_inputfile)
     logging("Run Start Time: " + ts, Verbose::kPedantic);
 
     return true;
+}
+
+bool FileInfo::FindTrigID()
+{
+    std::streampos initialPos = m_inputfile.tellg();
+    
+     while (m_inputfile.good()){
+        if (m_inputfile.peek() == EOF) {
+            logging("End of file reached",Verbose::kInfo);
+            break;
+        }   
+        std::streampos currentPos = m_inputfile.tellg();
+        if (m_index.find(this->GetNextTriggerID()) != m_index.end()){
+            // TrigID already there
+            m_index[this->GetNextTriggerID()].push_back(static_cast<std::uint64_t>(currentPos));
+        } else {
+            // not yet there
+            std::vector<std::uint64_t> l_vec;
+            l_vec.reserve(64);
+            l_vec.push_back(static_cast<std::uint64_t>(currentPos));
+            m_index[this->GetNextTriggerID()] = l_vec;
+        }
+        // Now advance to the next event
+        m_inputfile.seekg(GetEventSize(), std::ios::cur);
+    }   
+    // print the whole map
+
+    for (const auto& [key, vec] : m_index) {
+        std::cout << "Key: " << key << " -> [ ";
+        for (std::size_t v : vec) {
+            std::cout << v << " ";
+        }
+        std::cout << "]\n";
+    }
+    return true;
+}
+
+long FileInfo::GetNextTriggerID()
+{
+
+    // This function tries to access the next event fragment and read the trigger ID. 
+    // It restore the current position in the ifstream. 
+    // It returns a negative value in case it reaches the end of file. 
+    // It assumes that the file is presented with the position at the beginning of an event fragment
+
+    std::streampos currentPos = m_inputfile.tellg();
+    if (currentPos == -1)  // invalid position (e.g. already at EOF)
+        return -1;
+
+    uint64_t l_triggerID = 0;
+
+
+    // we will have a trigger ID - use that to collect all boards related to this event. 
+    // Now get it and then rewind the event to current position
+
+    // Move forward 3 bytes from here
+    m_inputfile.seekg(currentPos + std::streamoff(11));
+    if (!m_inputfile.good()) {
+        m_inputfile.clear(); // restore state in case of failure
+        m_inputfile.seekg(currentPos);
+        return -1;
+    }
+    // Read the 8-byte number
+    m_inputfile.read(reinterpret_cast<char*>(&l_triggerID), sizeof(l_triggerID));
+    // Restore the original position
+    m_inputfile.seekg(currentPos);
+    
+
+    return static_cast<long>(l_triggerID);
+
+}
+
+uint16_t FileInfo::GetEventSize()
+{
+    std::array<char,2> l_eventSize;
+    m_inputfile.read(l_eventSize.data(),2);
+    
+    static uint16_t eventSize;
+    
+    eventSize = (static_cast<unsigned char>(l_eventSize[1]) << 8) |
+            static_cast<unsigned char>(l_eventSize[0]);
+
+    m_inputfile.seekg(-2, std::ios::cur);
+    return eventSize;
 }

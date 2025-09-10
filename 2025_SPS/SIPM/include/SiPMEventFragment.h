@@ -1,8 +1,7 @@
 #ifndef SIPMDECODER_SIPMEVENTFRAGMENT_H
 #define SIPMDECODER_SIPMEVENTFRAGMENT_H
 
-#include "Channel.h"
-#include "FileHeader.h"
+#include "FileInfo.h"
 #include "hardcoded.h"
 
 #include <array>
@@ -15,7 +14,7 @@ class SiPMEventFragment
     public:
         SiPMEventFragment();
         ~SiPMEventFragment(){};
-        bool Read(const std::vector<char> &, const FileHeader & l_fileheader);
+        bool Read(const std::vector<char> &, FileInfo & l_fileheader);
         void Reset();
         uint16_t m_eventSize;
         uint8_t m_boardID;

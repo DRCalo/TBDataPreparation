@@ -6,7 +6,7 @@
 
 #include "hardcoded.h"
 
-#include "FileHeader.h"
+#include "FileInfo.h"
 #include "SiPMEventFragment.h"
 
 class SiPMEvent
@@ -18,9 +18,7 @@ class SiPMEvent
         SiPMEvent();
         ~SiPMEvent();
         void Reset();
-        bool ReadEvent(std::ifstream * l_inputfile, const FileHeader & l_fileheader);
-        bool BuildEvent();
-        long GetNextTriggerID(std::ifstream * l_inputfile);
+        bool ReadEvent(FileInfo & l_fileinfo);
         long m_triggerID;
         double m_timeStamp;
 
@@ -30,7 +28,7 @@ class SiPMEvent
         std::array<float,MAX_BOARDS*NCHANNELS> m_ToT;
 
     private:
-    std::array<SiPMEventFragment,MAX_BOARDS> m_fragments;
+    SiPMEventFragment m_fragment;
     
 };
 

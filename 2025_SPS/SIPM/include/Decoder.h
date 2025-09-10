@@ -2,13 +2,12 @@
 #define SIPMDECODER_DECODER_H
 
 #include <hardcoded.h>
-#include "FileHeader.h"
+#include "FileInfo.h"
 #include "SiPMEvent.h"
 #include "Helpers.h"
 
 // stl includes
 
-#include <fstream>
 #include <string>
 
 // ROOT includes
@@ -42,11 +41,11 @@ class Decoder
         // I will call an "Event Fragment" what Janus calls an event. It will be composed by an EventHeader and a payload. 
         bool Read();
         bool EventToOutput();
-        
+        bool IsSequential();
         void SetVerbosity(unsigned int level = 3);
         // The dat input file itself 
 
-        std::ifstream * m_inputfile;
+        
     private: 
 
         // The root output file
@@ -61,22 +60,15 @@ class Decoder
 
         TTree * m_datatree;
 
-        // The class representing the file header
+        // The class representing the file input
 
-        FileHeader m_fheader;
+        FileInfo m_finfo;
 
         // The class representing the event (all fragments with the same Trigger ID)
 
         SiPMEvent m_event;
 
-        // The input file name (kept for reference, although not really needed)
-
-        std::string m_filename;
-
-        // File size in bytes
-
-        uint64_t m_filesize;
-
+        
 };
 
 #endif // #ifndef SIPMDECODER_DECODER_H

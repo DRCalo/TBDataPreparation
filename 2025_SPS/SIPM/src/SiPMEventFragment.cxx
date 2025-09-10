@@ -139,15 +139,15 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
     return true;
 }
 
- bool SiPMEventFragment::Read(const std::vector<char>& l_data, const FileHeader & l_fileheader )
+ bool SiPMEventFragment::Read(const std::vector<char>& l_data, FileInfo & l_fileinfo )
  {
     static bool retval;
     retval = false;
     this->Reset();
    
-    switch(static_cast<AcquisitionMode>(l_fileheader.m_acqMode)){
+    switch(static_cast<AcquisitionMode>(l_fileinfo.m_acqMode)){
         case AcquisitionMode::kSpectroscopyTiming:
-            retval = ReadSpectroscopyTiming(l_data,l_fileheader.m_timeUnit,l_fileheader.m_ToAToT_conv);
+            retval = ReadSpectroscopyTiming(l_data,l_fileinfo.m_timeUnit,l_fileinfo.m_ToAToT_conv);
             break;
         // The others are not implemented for the moment
         case AcquisitionMode::kCounting :
@@ -161,7 +161,7 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
             break;
         default:
             logging("EventFragment::Read something went wrong.",Verbose::kError);
-            logging("Don't know what to do with an AcquisitionMode value " + std::to_string(l_fileheader.m_acqMode), Verbose::kError); 
+            logging("Don't know what to do with an AcquisitionMode value " + std::to_string(l_fileinfo.m_acqMode), Verbose::kError); 
             retval = false;           
     }   
     return retval;

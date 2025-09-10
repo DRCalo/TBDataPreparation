@@ -1,6 +1,6 @@
 #include "Decoder.h"
 #include "Helpers.h"
-#include "Board.h"
+
 
 // std includes 
 
@@ -9,11 +9,9 @@
 // ROOT includes 
 
 Decoder::Decoder(std::string filename):
-    m_inputfile(NULL),
     m_outfile(NULL),
     m_metadata(NULL),
-    m_datatree(NULL),
-    m_filename(filename)
+    m_datatree(NULL)
 {
 
 }
@@ -25,8 +23,6 @@ Decoder::~Decoder()
         m_outfile->cd();
         if (m_metadata)  m_metadata->Write("", TObject::kOverwrite);
         if (m_datatree)  m_datatree->Write("", TObject::kOverwrite);
-        auto nbytes = m_outfile->Write();   // check return value
-        std::cout << "TFile::Write() returned " << nbytes << " bytes\n";
         m_outfile->Close();
     }
 }
@@ -37,31 +33,9 @@ void Decoder::SetVerbosity(unsigned int level){
 
 bool Decoder::ConnectFile(std::string filename)
 {
-    if (!filename.empty()) m_filename = filename;
-
-    if (m_inputfile != NULL){
-        logging("Error in Decoder::ConnectFile - a file is already connected", Verbose::kError);
+    if (!m_finfo.OpenFile(filename)){
         return false;
     }
-
-    std::ifstream inputStream(m_filename, std::ios::binary | std::ios::ate);
-    logging("Opening file: " + m_filename, Verbose::kInfo);
-
-    if (!inputStream) {
-        logging("Cannot open file: " + m_filename, Verbose::kError);
-        return false;
-    }
-
-    m_filesize = static_cast<uint64_t>(inputStream.tellg());
-    std::cout << m_filesize << std::endl;
-    inputStream.close();
-    if (inputStream.is_open()) {
-        logging("Cannot close file file: " + m_filename, Verbose::kError);
-        return false;
-    } 
-    logging("File size: " + std::to_string(m_filesize / (1024 * 1024)) + " MiB", Verbose::kInfo);
-    m_inputfile = new std::ifstream(m_filename, std::ios::binary);
-
     return true;
 }
 
@@ -95,24 +69,24 @@ bool Decoder::OpenOutput(std::string filename)
 bool Decoder::ReadFileHeader()
 {
     
-    if (!m_fheader.Read(m_inputfile)){
+    if (!m_finfo.ReadHeader()){
         logging("Something wrong with reading the file header",Verbose::kError);
         return false;
     }
 
     // Now writing the header to a root file 
    
-    m_metadata->Branch("dataFormat", &m_fheader.m_dataFormat);
-    m_metadata->Branch("software",   &m_fheader.m_software);
-    m_metadata->Branch("boardType",  &m_fheader.m_boardType);
+    m_metadata->Branch("dataFormat", &m_finfo.m_dataFormat);
+    m_metadata->Branch("software",   &m_finfo.m_software);
+    m_metadata->Branch("boardType",  &m_finfo.m_boardType);
 
   // PODs: ROOT (6.x) can deduce types without a leaflist
-    m_metadata->Branch("runNumber",   &m_fheader.m_runNumber);
-    m_metadata->Branch("acqMode",     &m_fheader.m_acqMode);
-    m_metadata->Branch("enHistoBin",  &m_fheader.m_enHistoBin);
-    m_metadata->Branch("timeUnit",    &m_fheader.m_timeUnit);   
-    m_metadata->Branch("ToAToT_conv", &m_fheader.m_ToAToT_conv);
-    m_metadata->Branch("acqTime",     &m_fheader.m_acqTime);  
+    m_metadata->Branch("runNumber",   &m_finfo.m_runNumber);
+    m_metadata->Branch("acqMode",     &m_finfo.m_acqMode);
+    m_metadata->Branch("enHistoBin",  &m_finfo.m_enHistoBin);
+    m_metadata->Branch("timeUnit",    &m_finfo.m_timeUnit);   
+    m_metadata->Branch("ToAToT_conv", &m_finfo.m_ToAToT_conv);
+    m_metadata->Branch("acqTime",     &m_finfo.m_acqTime);  
 
     logging("About to fill the metadata tree\n", Verbose::kPedantic);
     m_metadata->Fill();
@@ -123,25 +97,30 @@ bool Decoder::ReadFileHeader()
 bool Decoder::Read()
 {
 
-    if (m_fheader.m_acqMode == 0){
+    if (m_finfo.m_acqMode == 0){
         logging("m_acqMode cannot be zero - file header not correctly read",Verbose::kError);
         return false;
     } 
 
-
-    while (m_inputfile->good()){
-        if (m_inputfile->peek() == EOF) {
+    while (m_finfo.InputFile()->good()){
+        if (m_finfo.InputFile()->peek() == EOF) {
             logging("End of file reached",Verbose::kInfo);
-            //break;
+            break;
         }   
-        if (!m_event.ReadEvent(m_inputfile, m_fheader)){
+        if (!m_event.ReadEvent(m_finfo)){
             logging("Something whent seriously wrong when reading an event",Verbose::kError);
             return false;
         }
-        m_event.BuildEvent();
+        
         m_datatree->Fill();
     }   
         
+    return true;
+}
+
+bool Decoder::IsSequential()
+{
+    m_finfo.FindTrigID();
     return true;
 }
 
