@@ -47,14 +47,14 @@ bool FileInfo::OpenFile(std::string filename)
     }
 
     m_filesize = static_cast<uint64_t>(inputStream.tellg());
-
+    std::cout << "FileSize " << m_filesize << std::endl;
     inputStream.close();
     if (inputStream.is_open()) {
         logging("Cannot close file file: " + m_filename, Verbose::kError);
         return false;
     } 
 
-    logging("File size: " + std::to_string(m_filesize / (1024 * 1024)) + " MiB", Verbose::kInfo);
+    logging("File size: " + std::to_string(static_cast<double>(m_filesize) / (1024 * 1024)) + " MiB", Verbose::kInfo);
     m_inputfile.open(m_filename, std::ios::binary);
 
     return true;
@@ -73,7 +73,7 @@ bool FileInfo::ReadHeader()
 
     printToHex(l_header.data(),l_header.size());
 
-    logging("Interpreting header\n",Verbose::kPedantic);
+    logging("Interpreting header\n",Verbose::kInfo);
     // Interpreting the header and filling the corresponding variables in the class
 
     // Clearly this depends on the version of the software used - This has been written 
@@ -82,23 +82,23 @@ bool FileInfo::ReadHeader()
     unsigned df1 = static_cast<unsigned>(static_cast<unsigned char>(l_header[0]));
     unsigned df2 = static_cast<unsigned>(static_cast<unsigned char>(l_header[1]));
     m_dataFormat = std::to_string(df1) + "." + std::to_string(df2);
-    logging("Data format version " + m_dataFormat, Verbose::kPedantic);
+    logging("Data format version " + m_dataFormat, Verbose::kInfo);
 
     unsigned dsv1 = static_cast<unsigned>(static_cast<unsigned char>(l_header[2]));
     unsigned dsv2 = static_cast<unsigned>(static_cast<unsigned char>(l_header[3]));
     unsigned dsv3 = static_cast<unsigned>(static_cast<unsigned char>(l_header[4]));
     m_software = std::to_string(dsv1) + "." + std::to_string(dsv2) + "." + std::to_string(dsv3);
-    logging("Software version " + m_software, Verbose::kPedantic);
+    logging("Software version " + m_software, Verbose::kInfo);
 
     int value = (static_cast<unsigned char>(l_header[6]) << 8) |
             static_cast<unsigned char>(l_header[5]);
     m_boardType = std::to_string(value);
-    logging("Board type " + m_boardType, Verbose::kPedantic);
+    logging("Board type " + m_boardType, Verbose::kInfo);
 
     value = (static_cast<unsigned char>(l_header[8]) << 8) |
             static_cast<unsigned char>(l_header[7]);
     m_runNumber = static_cast<uint32_t>(value);
-    logging("Run Number " + std::to_string(m_runNumber), Verbose::kPedantic);
+    logging("Run Number " + std::to_string(m_runNumber), Verbose::kInfo);
 
     value = static_cast<unsigned char>(l_header[9]);
     m_acqMode = value;
@@ -121,12 +121,12 @@ bool FileInfo::ReadHeader()
             logging("Error, the expected values for Acquisition Mode are 1 to 4, here I read " + std::to_string(m_acqMode),Verbose::kError);
             return false;
     }
-    logging("Acquisition mode  " + std::to_string(m_acqMode) + ", which means " + l_acq_mode, Verbose::kPedantic);
+    logging("Acquisition mode  " + std::to_string(m_acqMode) + ", which means " + l_acq_mode, Verbose::kInfo);
 
     value = (static_cast<unsigned char>(l_header[11]) << 8) |
             static_cast<unsigned char>(l_header[10]);
     m_enHistoBin = static_cast<uint32_t>(value);
-    logging("Energy Histogram Channels " + std::to_string(m_enHistoBin), Verbose::kPedantic);
+    logging("Energy Histogram Channels " + std::to_string(m_enHistoBin), Verbose::kInfo);
 
     value = static_cast<unsigned char>(l_header[12]);
     m_timeUnit = static_cast<uint8_t>(value);
@@ -142,12 +142,12 @@ bool FileInfo::ReadHeader()
             logging("Error, the expected values for the units for time are 0 to 1, here I read " + std::to_string(m_timeUnit),Verbose::kError);
             return false;
     }
-    logging("Time unit " + std::to_string(m_timeUnit) + ", which means " + l_tu, Verbose::kPedantic);
+    logging("Time unit " + std::to_string(m_timeUnit) + ", which means " + l_tu, Verbose::kInfo);
 
     float f_value;
     std::memcpy(&m_ToAToT_conv, &l_header[13], sizeof(f_value)); 
 
-    logging("ToA/ToT time conversion " + std::to_string(m_ToAToT_conv) + " ns/LSB", Verbose::kPedantic);
+    logging("ToA/ToT time conversion " + std::to_string(m_ToAToT_conv) + " ns/LSB", Verbose::kInfo);
 
     std::memcpy(&m_acqTime, &l_header[17], 8);
     std::time_t tt = m_acqTime/1000;   // Unix seconds
@@ -155,7 +155,7 @@ bool FileInfo::ReadHeader()
     std::ostringstream oss;
     oss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << (m_acqTime % 1000);
     std::string ts = oss.str();  
-    logging("Run Start Time: " + ts, Verbose::kPedantic);
+    logging("Run Start Time: " + ts, Verbose::kInfo);
 
     return true;
 }
@@ -182,7 +182,15 @@ bool FileInfo::BuildTrigIDMap()
         }
         // Now advance to the next event
         m_inputfile.seekg(GetEventSize(), std::ios::cur);
-    }   
+     }   
+
+    logging("The file contains " + std::to_string(m_index.size()) + " events",Verbose::kInfo);
+    uint64_t n_frag = 0;
+    for (auto it = m_index.begin(); it != m_index.end(); ++it) {
+        n_frag += (it->second).size();
+    }
+
+    logging("and  " + std::to_string(n_frag) + " fragments, for an average of " + std::to_string(static_cast<float>(n_frag)/static_cast<float>(m_index.size())) + " boards active per trigger", Verbose::kInfo);
     
     return true;
 }
