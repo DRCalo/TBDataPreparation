@@ -1,0 +1,560 @@
+{
+    "TS55": {
+        "addr": 3,
+        "module": "M1-S4",
+        "ringId": 41,
+        "pedestal": 270
+    },
+    "TS54": {
+        "addr": 7,
+        "module": "M2-S4",
+        "ringId": 42,
+        "pedestal": 277
+    },
+    "TS53": {
+        "addr": 11,
+        "module": "M3-S4",
+        "ringId": 43,
+        "pedestal": 218
+    },
+    "TS45": {
+        "addr": 2,
+        "module": "M1-S3",
+        "ringId": 31,
+        "pedestal": 254
+    },
+    "TS44": {
+        "addr": 6,
+        "module": "M2-S3",
+        "ringId": 32,
+        "pedestal": 223
+    },
+    "TS43": {
+        "addr": 10,
+        "module": "M3-S3",
+        "ringId": 33,
+        "pedestal": 255
+    },
+    "TS35": {
+        "addr": 1,
+        "module": "M1-S2",
+        "ringId": 21,
+        "pedestal": 257
+    },
+    "TS34": {
+        "addr": 5,
+        "module": "M2-S2",
+        "ringId": 22,
+        "pedestal": 263
+    },
+    "TS33": {
+        "addr": 9,
+        "module": "M3-S2",
+        "ringId": 23,
+        "pedestal": 276
+    },
+    "TS25": {
+        "addr": 0,
+        "module": "M1-S1",
+        "ringId": 11,
+        "pedestal": 275
+    },
+    "TS24": {
+        "addr": 4,
+        "module": "M2-S1",
+        "ringId": 12,
+        "pedestal": 264
+    },
+    "TS23": {
+        "addr": 8,
+        "module": "M3-S1",
+        "ringId": 13,
+        "pedestal": 246
+    },
+    "TS16": {
+        "addr": 15,
+        "module": "M4-S4",
+        "ringId": 1,
+        "pedestal": 259
+    },
+    "TS15": {
+        "addr": 19,
+        "module": "M5-S4",
+        "ringId": 2,
+        "pedestal": 259
+    },
+    "TS14": {
+        "addr": 23,
+        "module": "M6-S4",
+        "ringId": 3,
+        "pedestal": 263
+    },
+    "TS17": {
+        "addr": 14,
+        "module": "M4-S3",
+        "ringId": 4,
+        "pedestal": 312
+    },
+    "TS00": {
+        "addr": 18,
+        "module": "M5-S3",
+        "ringId": 5,
+        "pedestal": 264
+    },
+    "TS13": {
+        "addr": 22,
+        "module": "M6-S3",
+        "ringId": 6,
+        "pedestal": 272
+    },
+    "TS10": {
+        "addr": 13,
+        "module": "M4-S2",
+        "ringId": 7,
+        "pedestal": 295
+    },
+    "TS11": {
+        "addr": 17,
+        "module": "M5-S2",
+        "ringId": 8,
+        "pedestal": 238
+    },
+    "TS12": {
+        "addr": 21,
+        "module": "M6-S2",
+        "ringId": 9,
+        "pedestal": 233
+    },
+    "TS20": {
+        "addr": 12,
+        "module": "M4-S1",
+        "ringId": 17,
+        "pedestal": 199
+    },
+    "TS21": {
+        "addr": 16,
+        "module": "M5-S1",
+        "ringId": 18,
+        "pedestal": 258
+    },
+    "TS22": {
+        "addr": 20,
+        "module": "M6-S1",
+        "ringId": 19,
+        "pedestal": 247
+    },
+    "TS30": {
+        "addr": 27,
+        "module": "M7-S4",
+        "ringId": 27,
+        "pedestal": 225
+    },
+    "TS31": {
+        "addr": 31,
+        "module": "M8-S4",
+        "ringId": 28,
+        "pedestal": 254
+    },
+    "TS32": {
+        "addr": 67,
+        "module": "M9-S4",
+        "ringId": 59,
+        "pedestal": 305
+    },
+    "TS40": {
+        "addr": 26,
+        "module": "M7-S3",
+        "ringId": 37,
+        "pedestal": 261
+    },
+    "TS41": {
+        "addr": 30,
+        "module": "M8-S3",
+        "ringId": 38,
+        "pedestal": 253
+    },
+    "TS42": {
+        "addr": 66,
+        "module": "M9-S3",
+        "ringId": 49,
+        "pedestal": 266
+    },
+    "TS50": {
+        "addr": 25,
+        "module": "M7-S2",
+        "ringId": 47,
+        "pedestal": 221
+    },
+    "TS51": {
+        "addr": 29,
+        "module": "M8-S2",
+        "ringId": 48,
+        "pedestal": 232
+    },
+    "TS52": {
+        "addr": 65,
+        "module": "M9-S2",
+        "ringId": 39,
+        "pedestal": 252
+    },
+    "TS60": {
+        "addr": 24,
+        "module": "M7-S1",
+        "ringId": 57,
+        "pedestal": 255
+    },
+    "TS61": {
+        "addr": 28,
+        "module": "M8-S1",
+        "ringId": 58,
+        "pedestal": 237
+    },
+    "TS62": {
+        "addr": 64,
+        "module": "M9-S1",
+        "ringId": 29,
+        "pedestal": 258
+    },
+    "TC55": {
+        "addr": 35,
+        "module": "M1-C4",
+        "ringId": 41,
+        "pedestal": 277
+    },
+    "TC54": {
+        "addr": 39,
+        "module": "M2-C4",
+        "ringId": 42,
+        "pedestal": 214
+    },
+    "TC53": {
+        "addr": 43,
+        "module": "M3-C4",
+        "ringId": 43,
+        "pedestal": 263
+    },
+    "TC45": {
+        "addr": 34,
+        "module": "M1-C3",
+        "ringId": 31,
+        "pedestal": 268
+    },
+    "TC44": {
+        "addr": 38,
+        "module": "M2-C3",
+        "ringId": 32,
+        "pedestal": 264
+    },
+    "TC43": {
+        "addr": 42,
+        "module": "M3-C3",
+        "ringId": 33,
+        "pedestal": 284
+    },
+    "TC35": {
+        "addr": 33,
+        "module": "M1-C2",
+        "ringId": 21,
+        "pedestal": 281
+    },
+    "TC34": {
+        "addr": 37,
+        "module": "M2-C2",
+        "ringId": 22,
+        "pedestal": 224
+    },
+    "TC33": {
+        "addr": 41,
+        "module": "M3-C2",
+        "ringId": 23,
+        "pedestal": 227
+    },
+    "TC25": {
+        "addr": 32,
+        "module": "M1-C1",
+        "ringId": 11,
+        "pedestal": 279
+    },
+    "TC24": {
+        "addr": 36,
+        "module": "M2-C1",
+        "ringId": 12,
+        "pedestal": 235
+    },
+    "TC23": {
+        "addr": 40,
+        "module": "M3-C1",
+        "ringId": 13,
+        "pedestal": 246
+    },
+    "TC16": {
+        "addr": 47,
+        "module": "M4-C4",
+        "ringId": 1,
+        "pedestal": 247
+    },
+    "TC15": {
+        "addr": 51,
+        "module": "M5-C4",
+        "ringId": 2,
+        "pedestal": 265
+    },
+    "TC14": {
+        "addr": 55,
+        "module": "M6-C4",
+        "ringId": 3,
+        "pedestal": 263
+    },
+    "TC17": {
+        "addr": 46,
+        "module": "M4-C3",
+        "ringId": 4,
+        "pedestal": 238
+    },
+    "TC00": {
+        "addr": 50,
+        "module": "M5-C3",
+        "ringId": 5,
+        "pedestal": 268
+    },
+    "TC13": {
+        "addr": 54,
+        "module": "M6-C3",
+        "ringId": 6,
+        "pedestal": 289
+    },
+    "TC10": {
+        "addr": 45,
+        "module": "M4-C2",
+        "ringId": 5,
+        "pedestal": 200
+    },
+    "TC11": {
+        "addr": 49,
+        "module": "M5-C2",
+        "ringId": 8,
+        "pedestal": 280
+    },
+    "TC12": {
+        "addr": 53,
+        "module": "M6-C2",
+        "ringId": 9,
+        "pedestal": 225
+    },
+    "TC20": {
+        "addr": 44,
+        "module": "M4-C1",
+        "ringId": 17,
+        "pedestal": 268
+    },
+    "TC21": {
+        "addr": 48,
+        "module": "M5-C1",
+        "ringId": 18,
+        "pedestal": 257
+    },
+    "TC22": {
+        "addr": 52,
+        "module": "M6-C1",
+        "ringId": 19,
+        "pedestal": 195
+    },
+    "TC30": {
+        "addr": 59,
+        "module": "M7-C4",
+        "ringId": 27,
+        "pedestal": 268
+    },
+    "TC31": {
+        "addr": 63,
+        "module": "M8-C4",
+        "ringId": 28,
+        "pedestal": 123
+    },
+    "TC32": {
+        "addr": 71,
+        "module": "M9-C4",
+        "ringId": 59,
+        "pedestal": 285
+    },
+    "TC40": {
+        "addr": 58,
+        "module": "M7-C3",
+        "ringId": 37,
+        "pedestal": 281
+    },
+    "TC41": {
+        "addr": 62,
+        "module": "M8-C3",
+        "ringId": 38,
+        "pedestal": 89
+    },
+    "TC42": {
+        "addr": 70,
+        "module": "M9-C3",
+        "ringId": 49,
+        "pedestal": 278
+    },
+    "TC50": {
+        "addr": 57,
+        "module": "M7-C2",
+        "ringId": 47,
+        "pedestal": 263
+    },
+    "TC51": {
+        "addr": 61,
+        "module": "M8-C2",
+        "ringId": 48,
+        "pedestal": 250
+    },
+    "TC52": {
+        "addr": 69,
+        "module": "M9-C2",
+        "ringId": 39,
+        "pedestal": 316
+    },
+    "TC60": {
+        "addr": 56,
+        "module": "M7-C1",
+        "ringId": 57,
+        "pedestal": 269
+    },
+    "TC61": {
+        "addr": 60,
+        "module": "M8-C1",
+        "ringId": 58,
+        "pedestal": 286
+    },
+    "TC62": {
+        "addr": 68,
+        "module": "M9-C1",
+        "ringId": 29,
+        "pedestal": 241
+    },
+    "PreSh": {
+        "addr": 72,
+        "module": "PreSh",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "TailC": {
+        "addr": 96,
+        "module": "TileC",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "MuonT": {
+        "addr": 97,
+        "module": "MuonT",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "Cher1": {
+        "addr": 101,
+        "module": "Cher1",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "Cher2": {
+        "addr": 99,
+        "module": "Cher2",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "Cher3": {
+        "addr": 100,
+        "module": "Cher3",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L04": {
+        "addr": 114,
+        "module": "Leak04",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L03": {
+        "addr": 113,
+        "module": "Leak03",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L02": {
+        "addr": 112,
+        "module": "Leak02",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L09": {
+        "addr": 118,
+        "module": "Leak09",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L08": {
+        "addr": 117,
+        "module": "Leak08",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L07": {
+        "addr": 116,
+        "module": "Leak07",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L05": {
+        "addr": 115,
+        "module": "Leak05",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L13": {
+        "addr": 122,
+        "module": "Leak13",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L12": {
+        "addr": 121,
+        "module": "Leak12",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L11": {
+        "addr": 120,
+        "module": "Leak11",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L10": {
+        "addr": 119,
+        "module": "Leak10",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L20": {
+        "addr": 126,
+        "module": "Leak20",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L16": {
+        "addr": 125,
+        "module": "Leak16",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L15": {
+        "addr": 124,
+        "module": "Leak15",
+        "ringId": -1,
+        "pedestal": 0
+    },
+    "L14": {
+        "addr": 123,
+        "module": "Leak14",
+        "ringId": -1,
+        "pedestal": 0
+    }
+}

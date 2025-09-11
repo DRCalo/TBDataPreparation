@@ -3,7 +3,7 @@ if [ $# -ne 1 ]
 then
     echo "USAGE: setup.sh [TBVER]"
     echo "where TBVER is the version of the TB to be run"
-    echo "2023_SPS or 2024_SPS"
+    echo "2023_SPS, 2024_SPS or 2025_SPS"
     exit 1
 fi
 
@@ -26,7 +26,7 @@ then
     exit 1
 fi
 
-export PATH=${IDEARepo}/${TBVER}/scripts:${IDEARepo}/2023_SPS/SIPM/converter:${PATH}
+export PATH=${IDEARepo}/${TBVER}/scripts:${IDEARepo}/${TBVER}/SIPM/converter:${PATH}
 export PYTHONPATH=${IDEARepo}/${TBVER}/SIPM/scripts:${IDEARepo}/${TBVER}/scripts:${IDEARepo}/DreamDaqMon:${PYTHONPATH}
 
 export BATCHPATH=${PATH}
