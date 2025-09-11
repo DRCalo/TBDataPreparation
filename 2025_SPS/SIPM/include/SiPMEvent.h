@@ -8,6 +8,16 @@
 
 #include "SiPMEventFragment.h"
 
+/***************************************************
+## \file SiPMEvent.h 
+## \brief: Represents a physical event. Main class to store the information 
+## to be stored in root
+## \author: Iacopo Vivarelli (Alma Mater Studiorum Bologna)
+## 
+## \start date: 11 August 2025
+##
+##***************************************************/
+
 class SiPMEvent
 {
     // This class represents an event. In the naming convention I am using, an event is a trigger, a particle
@@ -20,7 +30,8 @@ class SiPMEvent
         //bool ReadEvent(FileInfo & l_fileinfo);
         bool ReadEventFragment(const std::vector<char> & l_data, AcquisitionMode l_acqMode,int l_timeUnit,float l_conversion);
         long m_triggerID;
-        double m_timeStamp;
+        double m_timeStamp; // Not really used. Unclear how to assign a time stamp to the event (it is something that belongs to the event fragments)
+        
         SiPMEventFragment & EvtFragment() {return m_fragment;}
 
         std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_HG;
@@ -29,7 +40,7 @@ class SiPMEvent
         std::array<float,MAX_BOARDS*NCHANNELS> m_ToT;
 
     private:
-    SiPMEventFragment m_fragment;
+    SiPMEventFragment m_fragment; // used to temporary store the data of a fragment
     
 };
 

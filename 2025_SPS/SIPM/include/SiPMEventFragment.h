@@ -34,6 +34,9 @@ class SiPMEventFragment
         std::array<float,NCHANNELS> m_ToT;
 
     private: 
+
+        // These are the functions actually used depending on the acquisition mode
+
         bool ReadSpectroscopy(const std::vector<char> &);
         bool ReadSpectroscopyTiming(const std::vector<char> &,int l_timeUnit = -1,float l_conversion = -1.);
         bool ReadTiming(const std::vector<char> &);

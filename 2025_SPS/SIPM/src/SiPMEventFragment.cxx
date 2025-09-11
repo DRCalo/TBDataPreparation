@@ -62,8 +62,7 @@ bool SiPMEventFragment::ReadSpectroscopy(const std::vector<char>& l_data)
 bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, int l_timeUnit, float l_conversion)
 {
     const uint8_t* p = reinterpret_cast<const uint8_t*>(l_data.data());
-    //m_eventSize = (static_cast<unsigned char>(l_data[1]) << 8) |
-    //static_cast<unsigned char>(l_data[0]);
+    
     read_le<uint16_t>(&m_eventSize,p);
     read_le<uint8_t>(&m_boardID,p);
     read_le<double>(&m_timeStamp,p);
