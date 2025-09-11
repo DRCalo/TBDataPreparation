@@ -14,6 +14,11 @@ void printToHex(const char* data, std::size_t n)
     std::cout << std::dec; // restore decimal
   }
 }
+
+Verbose g_getVerbosity() 
+{
+  return VERBOSE;
+} 
     
 void g_setVerbosity(const Verbose level)
 {VERBOSE = level;}

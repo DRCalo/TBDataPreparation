@@ -42,13 +42,13 @@ void SiPMEventFragment::Reset()
 
 bool SiPMEventFragment::ReadCounting(const std::vector<char>& l_data)
 {
-    logging("Acquisition modes different from kSpectroscopyTiming are not implemented yet",Verbose::kError);
+    logging("Acquisition modes different from Spectroscopy or SpectroscopyTiming are not implemented yet",Verbose::kError);
     return false;
 }
 
 bool SiPMEventFragment::ReadTiming(const std::vector<char>& l_data)
 {
-    logging("Acquisition modes different from kSpectroscopyTiming are not implemented yet",Verbose::kError);
+    logging("Acquisition modes different from Spectroscopy or SpectroscopyTiming are not implemented yet",Verbose::kError);
     return false;
 }
 
@@ -93,8 +93,12 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
     chtype = 0;
     
     static uint8_t chID;
-    static uint32_t i_ToA=0;
-    static uint16_t i_ToT=0;
+    static uint32_t i_ToA;
+    static uint16_t i_ToT;
+
+    i_ToA = 0;
+    i_ToT = 0;
+
     for (uint8_t n_ch = 0; n_ch < nChannelsActive; ++n_ch){
         // read the payload byte by byte 
         read_le<uint8_t>(&chID,p);
@@ -121,17 +125,17 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
         }
 
         logging("Channel " + std::to_string(chID) + ": HG " + std::to_string(m_HG[chID])
-                                                                        + "; LG " + std::to_string(m_LG[chID])
-                                                                        + "; ToA " + std::to_string(m_ToA[chID])
-                                                                        + "; ToT " + std::to_string(m_ToT[chID]),
-                                                                        Verbose::kPedantic);
+                                                  + "; LG " + std::to_string(m_LG[chID])
+                                                  + "; ToA " + std::to_string(m_ToA[chID])
+                                                  + "; ToT " + std::to_string(m_ToT[chID]),
+                                                  Verbose::kPedantic);
     }
 
     return true;
 }
 
- bool SiPMEventFragment::Read(const std::vector<char>& l_data, AcquisitionMode l_acqMode,  int l_timeUnit,float l_conversion)
- {
+bool SiPMEventFragment::Read(const std::vector<char>& l_data, AcquisitionMode l_acqMode,  int l_timeUnit,float l_conversion)
+{
     static bool retval;
     retval = false;
     this->Reset();
@@ -139,8 +143,6 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
     switch(l_acqMode){
         case AcquisitionMode::kSpectroscopyTiming:
             retval = ReadSpectroscopyTiming(l_data,l_timeUnit,l_conversion);
-            std::cout << "We are here" << std::endl;
-            std::cout << "retval = " << retval << std::endl;
             break;
         // The others are not implemented for the moment
         case AcquisitionMode::kCounting :
@@ -157,6 +159,6 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
             logging("Don't know what to do with an AcquisitionMode value " + std::to_string(static_cast<uint16_t>(l_acqMode)), Verbose::kError); 
             retval = false;           
     }   
-    std::cout << "Prima di uscire retval = " << retval << std::endl;
+
     return retval;
- }
+}

@@ -32,11 +32,15 @@ typedef std::map<long, std::vector<std::uint64_t>> TrigIndexMap;
 
 class FileInfo
 {
+
     public: 
     FileInfo();
     ~FileInfo(){};
-    bool ReadHeader();
+    bool ReadHeader(); // reads and stores the file header information
     
+    // Left public because they will have to be accessed 
+    // (for example to store them in a root file)
+
     std::string m_dataFormat;
     std::string m_software;
     std::string m_boardType;
@@ -46,22 +50,30 @@ class FileInfo
     uint8_t m_timeUnit;
     float m_ToAToT_conv;
     uint64_t m_acqTime;
-    bool ReadTrigID(long trigID, SiPMEvent & l_event);
-    long GetNextTriggerID();
-    uint16_t GetEventSize();
-    bool BuildTrigIDMap();
-    std::ifstream * InputFile() {return &m_inputfile;}
-    bool OpenFile(std::string filename);
-    const TrigIndexMap & GetIndexMap() const {return m_index;}
 
+    bool ReadTrigID(long trigID, SiPMEvent & l_event); // read all fragments corresponding to a given trigID and store them in the event
+
+    long GetNextTriggerID(); // If the file is at the beginning of an event, peeks at the next trigID without changing the current position of the file 
+    uint16_t GetEventSize(); // If the file is at the beginning of an event, peeks at the size of the event without changing the current position of the file 
+    
+    bool BuildTrigIDMap(); // Scans the whole file and builds m_index 
+    std::ifstream * InputFile() {return &m_inputfile;}
+    bool OpenFile(std::string filename); // Opens the input file
+    const TrigIndexMap & GetIndexMap() const {return m_index;}  
+    void PrintMap() const;
 
     private: 
+
         // a pointer to the input file
         std::ifstream m_inputfile;
         std::string m_filename;
         uint64_t m_filesize;
-        TrigIndexMap m_index;
-    
+
+        // The map of where all fragments corresponding to the same trigID start
+        // The keys are trigID 
+        // The payload is a vector of ints (where the event begins in the file)
+
+        TrigIndexMap m_index; 
     
 };
 

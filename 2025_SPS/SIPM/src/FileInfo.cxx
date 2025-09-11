@@ -47,7 +47,6 @@ bool FileInfo::OpenFile(std::string filename)
     }
 
     m_filesize = static_cast<uint64_t>(inputStream.tellg());
-    std::cout << m_filesize << std::endl;
 
     inputStream.close();
     if (inputStream.is_open()) {
@@ -60,8 +59,6 @@ bool FileInfo::OpenFile(std::string filename)
 
     return true;
 }
-
-
 
 bool FileInfo::ReadHeader()
 {
@@ -152,7 +149,6 @@ bool FileInfo::ReadHeader()
 
     logging("ToA/ToT time conversion " + std::to_string(m_ToAToT_conv) + " ns/LSB", Verbose::kPedantic);
 
-
     std::memcpy(&m_acqTime, &l_header[17], 8);
     std::time_t tt = m_acqTime/1000;   // Unix seconds
     std::tm tm = *std::gmtime(&tt);                // or std::gmtime for UTC
@@ -187,6 +183,12 @@ bool FileInfo::BuildTrigIDMap()
         // Now advance to the next event
         m_inputfile.seekg(GetEventSize(), std::ios::cur);
     }   
+    
+    return true;
+}
+
+void FileInfo::PrintMap() const 
+{
     // print the whole map
 
     for (const auto& [key, vec] : m_index) {
@@ -196,7 +198,6 @@ bool FileInfo::BuildTrigIDMap()
         }
         std::cout << "]\n";
     }
-    return true;
 }
 
 long FileInfo::GetNextTriggerID()
@@ -236,6 +237,7 @@ long FileInfo::GetNextTriggerID()
 
 uint16_t FileInfo::GetEventSize()
 {
+    // Assumes we are at the beginning of an event fragment
     std::array<char,2> l_eventSize;
     m_inputfile.read(l_eventSize.data(),2);
     
@@ -244,7 +246,7 @@ uint16_t FileInfo::GetEventSize()
     eventSize = (static_cast<unsigned char>(l_eventSize[1]) << 8) |
             static_cast<unsigned char>(l_eventSize[0]);
 
-    m_inputfile.seekg(-2, std::ios::cur);
+    m_inputfile.seekg(-2, std::ios::cur); // rewind the file
     return eventSize;
 }
 

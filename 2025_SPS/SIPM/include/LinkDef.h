@@ -4,6 +4,6 @@
 #pragma link off all functions;
 
 // Expose your classes/structs to PyROOT:
-#pragma link C++ class Decoder+;   // the '+' generates I/O dict if ClassDef is used
+#pragma link C++ class SiPMDecoder+;   // the '+' generates I/O dict if ClassDef is used
 //#pragma link C++ class std::array<Channel,64>+; // example if you need STL containers
 #endif

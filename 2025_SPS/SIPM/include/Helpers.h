@@ -30,6 +30,7 @@ inline uint8_t g_getChannelId(uint32_t index){
 } 
 void printToHex(const char* data, std::size_t n);
 void g_setVerbosity(const Verbose level);
+Verbose g_getVerbosity(); 
 void logging(const std::string&, const Verbose);
 
 // Optimized by compiler (popcount = number of bits set to 1)

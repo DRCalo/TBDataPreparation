@@ -6,6 +6,15 @@
 #include <array>
 #include <vector>
 
+/***************************************************
+## \file SiPMEventFragment.h 
+## \brief: Represents an event fragment (the data associated to a board). 
+## \author: Iacopo Vivarelli (Alma Mater Studiorum Bologna)
+## 
+## \start date: 11 August 2025
+##
+##***************************************************/
+
 class SiPMEventFragment
 {
     public:

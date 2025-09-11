@@ -12,7 +12,7 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Tree)
 
 # Public headers you want in the dictionary (adjust as needed)
 set(PUBLIC_HEADERS
-    ${PROJECT_SOURCE_DIR}/include/Decoder.h
+    ${PROJECT_SOURCE_DIR}/include/SiPMDecoder.h
     ${PROJECT_SOURCE_DIR}/include/FileInfo.h
     ${PROJECT_SOURCE_DIR}/include/SiPMEventFragment.h
     ${PROJECT_SOURCE_DIR}/include/SiPMEvent.h
