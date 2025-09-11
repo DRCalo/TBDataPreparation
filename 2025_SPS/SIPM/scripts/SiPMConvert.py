@@ -5,7 +5,7 @@ from glob import glob
 import multiprocessing as mp
 from tqdm import tqdm
 
-global ifile_basename = "sps2025data.run*.root"
+global ifile_basename = "SiPM_Run*_list.dat"
 global ofile_basename = "SiPM_RunXXX_list.root"
 
 import ROOT
