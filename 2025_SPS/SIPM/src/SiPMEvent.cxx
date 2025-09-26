@@ -1,7 +1,10 @@
 #include "SiPMEvent.h"
 #include "Helpers.h"
 #include "hardcoded.h"
+#include "mapping_sipm.hpp"
+
 #include <cassert>
+#include <algorithm>
 
 SiPMEvent::SiPMEvent():
     m_triggerID(-1)
@@ -31,10 +34,11 @@ bool SiPMEvent::ReadEventFragment(const std::vector<char> & l_data, AcquisitionM
         }
 
     if (m_fragment.m_boardID != 0xFF){ // Otherwise this hasn't been read
-        std::copy_n(m_fragment.m_HG.data(), NCHANNELS, m_HG.data() + m_fragment.m_boardID * NCHANNELS);
-        std::copy_n(m_fragment.m_LG.data(), NCHANNELS, m_LG.data() + m_fragment.m_boardID * NCHANNELS);   
-        std::copy_n(m_fragment.m_ToT.data(), NCHANNELS, m_ToT.data() + m_fragment.m_boardID * NCHANNELS);
-        std::copy_n(m_fragment.m_ToA.data(), NCHANNELS, m_ToA.data() + m_fragment.m_boardID * NCHANNELS);
+        const int offset = SiPMCaloMapping::getIdxFromHWLoc(SiPMCaloMapping::HWLoc(m_fragment.m_boardID + 1, 0));
+        std::copy_n(m_fragment.m_HG.data(), NCHANNELS, m_HG.data() + offset);
+        std::copy_n(m_fragment.m_LG.data(), NCHANNELS, m_LG.data() + offset);
+        std::copy_n(m_fragment.m_ToT.data(), NCHANNELS, m_ToT.data() + offset);
+        std::copy_n(m_fragment.m_ToA.data(), NCHANNELS, m_ToA.data() + offset);
     }
 
     return true;
