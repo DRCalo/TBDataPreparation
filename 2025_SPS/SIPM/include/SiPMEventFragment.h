@@ -2,6 +2,8 @@
 #define SIPMDECODER_SIPMEVENTFRAGMENT_H
 
 #include "hardcoded.h"
+#include "mapping_sipm.hpp"
+
 
 #include <array>
 #include <vector>

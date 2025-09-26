@@ -7,6 +7,7 @@
 #include "hardcoded.h"
 
 #include "SiPMEventFragment.h"
+#include "mapping_sipm.hpp"
 
 /***************************************************
 ## \file SiPMEvent.h 
