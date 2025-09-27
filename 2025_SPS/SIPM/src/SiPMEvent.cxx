@@ -1,6 +1,8 @@
 #include "SiPMEvent.h"
 #include "Helpers.h"
 #include "hardcoded.h"
+
+#include <algorithm> 
 #include <cassert>
 
 SiPMEvent::SiPMEvent():
@@ -26,9 +28,10 @@ bool SiPMEvent::ReadEventFragment(const std::vector<char> & l_data, AcquisitionM
 {
     bool correctlyRead = m_fragment.Read(l_data,l_acqMode, l_timeUnit,l_conversion);
     if (!correctlyRead){
-            logging ("Something went wrong with the event reading", Verbose::kError);
+            logging ("SiPMEvent::ReadEventFragment - Something went wrong with the event reading", Verbose::kError);
             return false;
         }
+
 
     if (m_fragment.m_boardID != 0xFF){ // Otherwise this hasn't been read
         std::copy_n(m_fragment.m_HG.data(), NCHANNELS, m_HG.data() + m_fragment.m_boardID * NCHANNELS);

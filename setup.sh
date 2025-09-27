@@ -1,3 +1,5 @@
+#! /bin/bash
+
 
 if [ $# -ne 1 ]
 then
@@ -12,11 +14,6 @@ echo "Setting up environment for "${TBVER}
 
 
 
-# Activate virtual environment after lsetup to avoid PYTHONPATH pollution
-#. "${IDEADIR}"/ideadr-env/bin/activate 
-
-# c.f. libtiff.so hack in init.sh
-#export LD_LIBRARY_PATH=${IDEADIR}/ideadr-env/lib:$LD_LIBRARY_PATH 
 
 export IDEARepo=${IDEADIR}/TBDataPreparation
 
@@ -26,8 +23,16 @@ then
     exit 1
 fi
 
+if [ ! -d ${IDEADIR}/build ]
+then
+    mkdir ${IDEADIR}/build
+    cd ${IDEADIR}/build
+    cmake ${IDEARepo}/${TBVER}/SIPM
+    make
+fi
+
+export LD_LIBRARY_PATH=${IDEADIR}/build:${LD_LIBRARY_PATH}
 export PATH=${IDEARepo}/${TBVER}/scripts:${IDEARepo}/${TBVER}/SIPM/converter:${PATH}
 export PYTHONPATH=${IDEARepo}/${TBVER}/SIPM/scripts:${IDEARepo}/${TBVER}/scripts:${IDEARepo}/DreamDaqMon:${PYTHONPATH}
-
 export BATCHPATH=${PATH}
 

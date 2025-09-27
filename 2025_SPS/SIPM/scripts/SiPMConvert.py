@@ -7,7 +7,7 @@ from tqdm import tqdm
 import shutil
 
 global ifile_basename
-ifile_basename = "SiPM_Run*_list.dat"
+ifile_basename = "Run*_list.dat"
 global ofile_basename
 ofile_basename = "SiPM_RunXXX_list.root"
 
@@ -19,7 +19,7 @@ ROOT.gSystem.Load("libSiPMConverter")
 
    
 def getRunNumber(fname):
-    runNumber = os.path.basename(fname).split('_')[1].lstrip('Run')
+    runNumber = os.path.basename(fname).split('_')[0].split('.')[0].lstrip('Run')
     return runNumber 
 
 def correspondingOutputName(fname):
@@ -36,10 +36,9 @@ def getFiles(forceAll):
         files = glob.glob(rawdataPath + "/*.dat")
         files = list(map(os.path.abspath, files))
         files = [f for f in files if os.path.getsize(f) > 1000]
-        print(files)
     else: 
         candidate_files = glob.glob(rawdataPath + '/' + ifile_basename)
-        print(candidate_files)
+        
         for filename in candidate_files: 
             target_filename = correspondingOutputName(filename)
 
@@ -47,7 +46,6 @@ def getFiles(forceAll):
                 if verbosityLevel == 4: 
                     print(target_filename + " already processed")
             else: 
-                print (os.path.getsize(filename))
                 if (os.path.getsize(filename) > 1000):
                     files.append(filename)
     return files
@@ -80,22 +78,21 @@ def runConversion(ifname,ofname):
 
     if not checkProcess:
         print("SiPMDecoder::Read() ERROR! Something wrong while processing the input file ")
-
+        exit()
     
 
 
 def convertAll(fnames):
     for filename in fnames: 
         tempOutFileName = "temp_output_" + getRunNumber(filename) + ".root"
-        print ("A temporary output file with name " + tempOutFileName + " will be opened and then renamed at the end of the processing.")
+        print ("\n\nA temporary output file with name " + tempOutFileName + " will be opened and then renamed at the end of the processing.")
         runConversion(filename, tempOutFileName)
         shutil.move(tempOutFileName,correspondingOutputName(filename))
 
 
-
-if __name__ == "__main__":
+def main():
     import argparse                                                                      
-    parser = argparse.ArgumentParser(description='This script onverts the binary FERs files from the Janus software to root ntuples.')
+    parser = argparse.ArgumentParser(description='This script onverts the binary FERs files from the Janus software to root ntuples.',     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--inputRawDataPath', dest='rawdataPath', default='/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawData', help='Input path of raw data. If it is a file, only this one will be processed. If it is a directory, all files fill be processed. Assuming file names like ' + ifile_basename)
     parser.add_argument('-o', '--outputRawNtuplePath', dest='rawntuplePath', default='/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawNtupleSiPM', help='Output path for the raw ntuples')
     parser.add_argument('-V', '--verbosityLevel', dest='verbosityLevel', default=3, help="Controls the verbosity level - Remember:  0=Quiet, 1=Error, 2=Warn, 3=Info, 4=Pedantic" )
@@ -136,10 +133,16 @@ if __name__ == "__main__":
 
         if toConvert is None:
             exit()
-    
-        print ("Files to be converted: \n\n")
-        print(toConvert)
-        print ("\n\n")
+            
+        if len(toConvert) != 0:
+            print ("Files to be converted: \n\n")
+            print(toConvert)
+            print ("\n\n")
 
-        convertAll(toConvert)
+            convertAll(toConvert)
+        else:
+            print("No new file to be converted \n\n")
+
+if __name__ == "__main__":
+    main()
     

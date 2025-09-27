@@ -18,13 +18,13 @@ SiPMDecoder::SiPMDecoder(std::string filename):
 
 SiPMDecoder::~SiPMDecoder()
 {
-  std::cout << "m_outfile " << m_outfile << " Is Open " << m_outfile->IsOpen() << std::endl;
-    if (m_outfile && m_outfile->IsOpen()) {
-        m_outfile->cd();
-        if (m_metadata)  m_metadata->Write("", TObject::kOverwrite);
-        if (m_datatree)  m_datatree->Write("", TObject::kOverwrite);
-        m_outfile->Close();
-    }
+  logging( "m_outfile " << m_outfile << " Is Open " << m_outfile->IsOpen(),Verbose::kPedantic);
+  if (m_outfile && m_outfile->IsOpen()) {
+    m_outfile->cd();
+    if (m_metadata)  m_metadata->Write("", TObject::kOverwrite);
+    if (m_datatree)  m_datatree->Write("", TObject::kOverwrite);
+    m_outfile->Close();
+  }
 }
 
 void SiPMDecoder::SetVerbosity(unsigned int level){
@@ -124,6 +124,8 @@ bool SiPMDecoder::Read()
         m_finfo.PrintMap();
     }
 
+    unsigned int eventCounter = 0;
+    
     for (const auto& pair : m_finfo.GetIndexMap()) {
         // Now looping on the trigIDs and actually reading the events
         if (!m_finfo.ReadTrigID(pair.first,m_event)){
@@ -132,6 +134,10 @@ bool SiPMDecoder::Read()
         }
         // Once the event is built, fill the output tree
         m_datatree->Fill();
+	if (eventCounter%1000 == 0){
+	  logging(std::to_string(eventCounter) + " events processed ", Verbose::kInfo);
+	}
+	++eventCounter;
     }
         
     return true;

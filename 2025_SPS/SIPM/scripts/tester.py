@@ -7,11 +7,11 @@ ROOT.gSystem.Load("libSiPMConverter")
 # ROOT.gInterpreter.ProcessLine('#include "MyThing.h"')
 
 # Now you can use your C++ API from Python:
-obj = ROOT.Decoder()
-obj.SetVerbosity(4)
+obj = ROOT.SiPMDecoder()
+obj.SetVerbosity(3)
 # Remember:  enum class Verbose { kQuiet, kError, kWarn, kInfo, kPedantic };
 
-if (obj.ConnectFile("Run35.0_list.dat")):
+if (obj.ConnectFile("/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawData/Run1.0_list.dat")):
     
     if (obj.OpenOutput("output.root")):
         obj.ReadFileHeader()

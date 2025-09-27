@@ -55,8 +55,7 @@ bool SiPMEventFragment::ReadTiming(const std::vector<char>& l_data)
 bool SiPMEventFragment::ReadSpectroscopy(const std::vector<char>& l_data)
 {
     // Spectroscopy is identical to Spectroscopy & Timing - the only difference is in the payload. 
-    ReadSpectroscopyTiming(l_data);
-    return false;
+    return ReadSpectroscopyTiming(l_data);
 }
 
 bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, int l_timeUnit, float l_conversion)
