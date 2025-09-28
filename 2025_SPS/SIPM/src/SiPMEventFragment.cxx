@@ -106,8 +106,8 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
         logging("Channel type Hex",Verbose::kPedantic);
         printToHex(reinterpret_cast<const char*>(&chtype),1);
 
-        if (chtype & CHTYPE_HAS_HG)  read_le<uint16_t>(&m_HG[chID],p);
         if (chtype & CHTYPE_HAS_LG)  read_le<uint16_t>(&m_LG[chID],p);
+        if (chtype & CHTYPE_HAS_HG)  read_le<uint16_t>(&m_HG[chID],p);
         if (l_timeUnit == 0){ // Depending on the value of the timeUnit read from the file header, the ToA and ToT are stored as float or as int)
             if (chtype & CHTYPE_HAS_TOA) {
                 read_le<uint32_t>(&i_ToA,p);

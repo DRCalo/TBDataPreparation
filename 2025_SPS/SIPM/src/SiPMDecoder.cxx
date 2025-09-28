@@ -18,7 +18,6 @@ SiPMDecoder::SiPMDecoder(std::string filename):
 
 SiPMDecoder::~SiPMDecoder()
 {
-  logging( "m_outfile " << m_outfile << " Is Open " << m_outfile->IsOpen(),Verbose::kPedantic);
   if (m_outfile && m_outfile->IsOpen()) {
     m_outfile->cd();
     if (m_metadata)  m_metadata->Write("", TObject::kOverwrite);
@@ -57,7 +56,9 @@ bool SiPMDecoder::OpenOutput(std::string filename)
 
     // Prepare the structure of the SiPM_rawTree
 
-    m_datatree->Branch("TrigID",&m_event.m_triggerID);  
+    m_datatree->Branch("TrigID",&m_event.m_triggerID);
+    m_datatree->Branch("BoardTimeStamps",&m_event.m_timeStamps);
+    m_datatree->Branch("EventTimeStamp",&m_event.m_evTimeStamp);  
     m_datatree->Branch("SiPM_HG",&m_event.m_HG);  
     m_datatree->Branch("SiPM_LG",&m_event.m_LG);  
     m_datatree->Branch("SiPM_ToA",&m_event.m_ToA);  
@@ -134,7 +135,7 @@ bool SiPMDecoder::Read()
         }
         // Once the event is built, fill the output tree
         m_datatree->Fill();
-	if (eventCounter%1000 == 0){
+	if (eventCounter%10000 == 0){
 	  logging(std::to_string(eventCounter) + " events processed ", Verbose::kInfo);
 	}
 	++eventCounter;

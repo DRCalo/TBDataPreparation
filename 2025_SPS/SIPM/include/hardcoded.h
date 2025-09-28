@@ -26,8 +26,8 @@ static constexpr uint32_t FILE_HEADER_SIZE = 25;
 
 
 // Bit flags
-constexpr uint8_t CHTYPE_HAS_HG  = 0x01;
-constexpr uint8_t CHTYPE_HAS_LG  = 0x02;
+constexpr uint8_t CHTYPE_HAS_LG  = 0x01;
+constexpr uint8_t CHTYPE_HAS_HG  = 0x02;
 constexpr uint8_t CHTYPE_HAS_TOA = 0x10;
 constexpr uint8_t CHTYPE_HAS_TOT = 0x20;
 

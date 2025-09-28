@@ -288,6 +288,10 @@ bool FileInfo::ReadTrigID(long trigID, SiPMEvent & l_event)
         ++fragmentCounter;
     }
 
+    // Compute the event-level timeStamp
+
+    l_event.ComputeEventTimeStamp();
+
     logging("triggerID " + std::to_string(trigID) + " Read " + std::to_string(fragmentCounter +1) + " boards",Verbose::kPedantic);
 
     return true;

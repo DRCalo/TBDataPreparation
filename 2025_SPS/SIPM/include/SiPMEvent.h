@@ -21,27 +21,30 @@
 
 class SiPMEvent
 {
-    // This class represents an event. In the naming convention I am using, an event is a trigger, a particle
-    // In the Janus jargon, instead, an "event" is the reading of one board. 
-    // In my jargon, many boards can be part of the same event, characterised by the trigger ID. 
-    public: 
-        SiPMEvent();
-        ~SiPMEvent();
-        void Reset();
-        //bool ReadEvent(FileInfo & l_fileinfo);
-        bool ReadEventFragment(const std::vector<char> & l_data, AcquisitionMode l_acqMode,int l_timeUnit,float l_conversion);
-        long m_triggerID;
-        double m_timeStamp; // Not really used. Unclear how to assign a time stamp to the event (it is something that belongs to the event fragments)
+  // This class represents an event. In the naming convention I am using, an event is a trigger, a particle
+  // In the Janus jargon, instead, an "event" is the reading of one board. 
+  // In my jargon, many boards can be part of the same event, characterised by the trigger ID. 
+public: 
+  SiPMEvent();
+  ~SiPMEvent();
+  void Reset();
+  //bool ReadEvent(FileInfo & l_fileinfo);
+  bool ReadEventFragment(const std::vector<char> & l_data, AcquisitionMode l_acqMode,int l_timeUnit,float l_conversion);
+  long m_triggerID;
+  std::array<double,MAX_BOARDS> m_timeStamps; // the timestamp of each board
+  void ComputeEventTimeStamp(); // compute m_evTimeStamp
+  double m_evTimeStamp; // the timestamp of the event. Equal to the timestamp of the boars if tehy are all the same, -1 if they are not.
+
         
-        SiPMEventFragment & EvtFragment() {return m_fragment;}
-
-        std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_HG;
-        std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_LG;
-        std::array<float,MAX_BOARDS*NCHANNELS> m_ToA;
-        std::array<float,MAX_BOARDS*NCHANNELS> m_ToT;
-
-    private:
-    SiPMEventFragment m_fragment; // used to temporary store the data of a fragment
+  SiPMEventFragment & EvtFragment() {return m_fragment;}
+  
+  std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_HG;
+  std::array<uint16_t,MAX_BOARDS*NCHANNELS> m_LG;
+  std::array<float,MAX_BOARDS*NCHANNELS> m_ToA;
+  std::array<float,MAX_BOARDS*NCHANNELS> m_ToT;
+  
+private:
+  SiPMEventFragment m_fragment; // used to temporary store the data of a fragment
     
 };
 
