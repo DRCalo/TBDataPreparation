@@ -29,7 +29,17 @@ then
     cd ${IDEADIR}/build
     cmake ${IDEARepo}/${TBVER}/SIPM
     make
+    cd ${IDEADIR}
 fi
+
+if [ ! -d ${IDEADIR}/run ]
+then
+    mkdir ${IDEADIR}/run
+    cd ${IDEADIR}/run
+    ln -s ${IDEARepo}/${TBVER}/SIPM/scripts/SiPMConvert.py
+    cd ${IDEADIR}
+fi
+
 
 export LD_LIBRARY_PATH=${IDEADIR}/build:${LD_LIBRARY_PATH}
 export PATH=${IDEARepo}/${TBVER}/scripts:${IDEARepo}/${TBVER}/SIPM/converter:${PATH}
