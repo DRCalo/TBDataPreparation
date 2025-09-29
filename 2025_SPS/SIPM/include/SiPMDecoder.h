@@ -39,7 +39,7 @@ class SiPMDecoder
         // I am naming the functions below following a physical terminology
         // An "event" for me is one acquisition from all boards all corresponding to a given trigger ID
         // I will call an "Event Fragment" what Janus calls an event. It will be composed by an EventHeader and a payload. 
-        bool Read(); // reads the actual events and creates the SiPM tree 
+        bool Read(bool doEventBuilding = true); // reads the actual events and creates the SiPM tree 
         void SetVerbosity(unsigned int level = 3);
         // The dat input file itself 
 
