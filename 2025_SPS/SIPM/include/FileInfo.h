@@ -51,6 +51,8 @@ class FileInfo
     float m_ToAToT_conv;
     uint64_t m_acqTime;
 
+    bool ReadEvent(SiPMEvent & l_event);
+    bool ReadEventFragment(SiPMEvent & l_event);  
     bool ReadTrigID(long trigID, SiPMEvent & l_event); // read all fragments corresponding to a given trigID and store them in the event
 
     long GetNextTriggerID(); // If the file is at the beginning of an event, peeks at the next trigID without changing the current position of the file 

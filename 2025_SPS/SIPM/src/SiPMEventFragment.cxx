@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <ctime>
 #include <iomanip>
-#include <cassert>
+#include <stdexcept>
 
 
 #include "Helpers.h"
@@ -80,11 +80,12 @@ bool SiPMEventFragment::ReadSpectroscopyTiming(const std::vector<char>& l_data, 
     printToHex(m_channelMask,8);
     
     const uint8_t nChannelsActive = popcount(channelMask);
+    
     if (nChannelsActive != NCHANNELS){
-        logging("A board with a number of channels different from 64",Verbose::kError);
+      logging("A board with a number of channels different from " + std::to_string(NCHANNELS),Verbose::kError);
+	throw std::runtime_error("Boards should always have " + std::to_string(NCHANNELS) + " channels");
+	return false;
     }
-    assert(nChannelsActive == NCHANNELS); // let the code crash if something unexpected happens here, might be eased off once we have some statistics
-
 
     // now work on the payload
     static uint8_t chtype;

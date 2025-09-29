@@ -95,7 +95,7 @@ bool SiPMDecoder::ReadFileHeader()
     return true;
 }
 
-bool SiPMDecoder::Read()
+bool SiPMDecoder::Read(bool doEventBuilding)
 {
     if (m_finfo.m_dataFormat.empty()){// The file header was not read
         logging("It appears that the input file header was not read. Doing it now.",Verbose::kWarn);
@@ -114,34 +114,65 @@ bool SiPMDecoder::Read()
         return false;
     } 
 
-    if (!m_finfo.BuildTrigIDMap()){ 
+    unsigned int eventCounter = 0;
+    bool goodRead = false;
+
+    if (!doEventBuilding){
+      logging("Event building is disabled - the output file will contain one board per entry",Verbose::kWarn);
+    }
+    
+    if (doEventBuilding){
+      
+      if (!m_finfo.BuildTrigIDMap()){ 
         // Quickly scanning the input file and building the map of the trigIDs 
         // and to what fragments they correspond
         logging("Problem in building the trigID map", Verbose::kError);
         return false;
-    }
+      }
     
-    if (g_getVerbosity() == Verbose::kPedantic){
+      if (g_getVerbosity() == Verbose::kPedantic){
         m_finfo.PrintMap();
-    }
-
-    unsigned int eventCounter = 0;
-    
-    for (const auto& pair : m_finfo.GetIndexMap()) {
+      }
+      
+      for (const auto& pair : m_finfo.GetIndexMap()) {
         // Now looping on the trigIDs and actually reading the events
-        if (!m_finfo.ReadTrigID(pair.first,m_event)){
-            logging("Cannot correctly read fragments in TrigID " + std::to_string(pair.first),Verbose::kError);
-            return false;
+	try { 
+	  goodRead = m_finfo.ReadTrigID(pair.first,m_event);
+	} catch (const std::runtime_error& e) {
+	  logging(e.what(),Verbose::kError);	
+	  logging("Cannot correctly read fragments in TrigID " + std::to_string(pair.first),Verbose::kError);
+	  // stop processing events
+	  break;
+	}  
+	if (!goodRead) break; // stop processing in case of a bad read
+        // Once the event is built, fill the tree 
+        m_datatree->Fill();
+	if (eventCounter%10000 == 0){
+	  logging(std::to_string(eventCounter) + " events processed ", Verbose::kInfo);
+	}
+	++eventCounter;
+      }
+    } else { // do not even attempt to try event building, just read one event after the other
+      while (m_finfo.InputFile()->peek() != EOF){
+
+        try {
+	  goodRead = m_finfo.ReadEvent(m_event);
+	} catch (const std::runtime_error& e) {
+	  logging(e.what(),Verbose::kError);
+	  logging("Cannot correctly read event fragment " + std::to_string(eventCounter),Verbose::kError);
+	// stop processing events
+	  break;
         }
+	if (!goodRead) break; // stop processing in case of a bad read 
         // Once the event is built, fill the output tree
         m_datatree->Fill();
 	if (eventCounter%10000 == 0){
 	  logging(std::to_string(eventCounter) + " events processed ", Verbose::kInfo);
 	}
 	++eventCounter;
+      }
     }
-        
-    return true;
+    return goodRead;
 }
 
 
