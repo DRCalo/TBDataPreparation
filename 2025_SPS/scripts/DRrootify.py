@@ -36,8 +36,8 @@ class DRrootify:
         self.NumOfSpilEv = array('i',[0])
         self.TriggerMask = array('l',[0])
         self.ADCs = array('i',[-1]*224)
-        self.TDCsval = array('i',[-1]*48)
-        self.TDCscheck = array('i',[-1]*48)
+        self.TDCsval = array('i',[-1]*224)
+        self.TDCscheck = array('i',[-1]*224)
 
         self.tbtree.Branch("EventNumber",self.EventNumber,'EventNumber/I')
         self.tbtree.Branch("EventSpill",self.EventSpill,'EventSpill/I')
@@ -47,8 +47,8 @@ class DRrootify:
         self.tbtree.Branch("NumOfSpilEv",self.NumOfSpilEv,'NumOfSpilEv/I')
         self.tbtree.Branch("TriggerMask",self.TriggerMask,'TriggerMask/L')
         self.tbtree.Branch("ADCs",self.ADCs,'ADCs[224]/I')
-        #self.tbtree.Branch("TDCsval",self.TDCsval,'TDCsval[48]/I')
-        #self.tbtree.Branch("TDCscheck",self.TDCscheck,'TDCscheck[48]/I')
+        self.tbtree.Branch("TDCsval",self.TDCsval,'TDCsval[48]/I')
+        self.tbtree.Branch("TDCscheck",self.TDCscheck,'TDCscheck[48]/I')
 
     def ReadandRoot(self):
         if self.drf == None:
@@ -58,7 +58,7 @@ class DRrootify:
         for i,line in enumerate(self.drf):
             
             if i%5000 == 0 : print( "------>At line "+str(i))
-            for ch in range(0,48):
+            for ch in range(0,224):
                 self.TDCsval[ch] = -1
                 self.TDCscheck[ch] = -1
             for ch in range(0,224):
@@ -77,13 +77,11 @@ class DRrootify:
             self.NumOfPedeEv[0] = evt.NumOfPedeEv
             self.NumOfSpilEv[0] = evt.NumOfSpilEv
             self.TriggerMask[0] = evt.TriggerMask
-	    #if evt.TriggerMask > 10:
-	    #	print evt.TriggerMask
             for ch,val in evt.ADCs.items() :
                 self.ADCs[ch] = val
-            #for ch,vals in evt.TDCs.items():
-            #    self.TDCsval[ch] = vals[0]
-            #    self.TDCscheck[ch] = vals[1]
+            for ch,vals in evt.TDCs.items():
+                self.TDCsval[ch] = vals[0]
+                self.TDCscheck[ch] = vals[1]
             self.tbtree.Fill()
 
         print( "--->End rootification ")
