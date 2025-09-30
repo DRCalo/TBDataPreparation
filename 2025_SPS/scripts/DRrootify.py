@@ -55,9 +55,11 @@ class DRrootify:
             print('Input file not opened')
             return False
 
+        thisPhysicsEvents = 0
+        thisPedestalEvents = 0
         for i,line in enumerate(self.drf):
             
-            if i%5000 == 0 : print( "------>At line "+str(i))
+            if i%1 == 0 : print( "------>At line "+str(i))
             for ch in range(0,224):
                 self.TDCsval[ch] = -1
                 self.TDCscheck[ch] = -1
@@ -66,6 +68,10 @@ class DRrootify:
             evt = DREvent.DRdecode(line)
             if evt==None: #skip this event
                 continue
+            if evt.TriggerMask == 5:
+                thisPhysicsEvents += 1 # count physics and pedestal events of this run
+            else:
+                thisPedestalEvents += 1
             print("------------")
             print(evt.ADCs)
             print(evt.TDCs)
@@ -73,8 +79,8 @@ class DRrootify:
             self.EventNumber[0] = evt.EventNumber
             self.EventSpill[0] = evt.SpillNumber
             self.EventTime[0] = evt.EventTime
-            self.NumOfPhysEv[0] = evt.NumOfPhysEv
-            self.NumOfPedeEv[0] = evt.NumOfPedeEv
+            self.NumOfPhysEv[0] = thisPhysicsEvents
+            self.NumOfPedeEv[0] = thisPedestalEvents
             self.NumOfSpilEv[0] = evt.NumOfSpilEv
             self.TriggerMask[0] = evt.TriggerMask
             for ch,val in evt.ADCs.items() :
