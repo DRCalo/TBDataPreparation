@@ -64,6 +64,8 @@ class DRrootify:
             for ch in range(0,224):
                 self.ADCs[ch] = -1
             evt = DREvent.DRdecode(line)
+            if evt==None: #skip this event
+                continue
             print("------------")
             print(evt.ADCs)
             print(evt.TDCs)
