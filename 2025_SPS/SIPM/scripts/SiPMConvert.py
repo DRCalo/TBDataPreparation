@@ -17,6 +17,7 @@ import ROOT
 ROOT.gSystem.Load("libSiPMConverter")
 
 bad_processing = []
+skipRun = []
 
 
    
@@ -90,7 +91,10 @@ def runConversion(ifname,ofname,doEventBuilding=True):
 
 
 def convertAll(fnames,doEventBuilding = True):
-    for filename in fnames: 
+    global skipRun
+    for filename in fnames:
+        if getRunNumber(filename) in  skipRun:
+            continue
         tempOutFileName = "temp_output_" + getRunNumber(filename) + ".root"
         print ("\n\nA temporary output file with name " + tempOutFileName + " will be opened and then renamed at the end of the processing.")
         runConversion(filename, tempOutFileName, doEventBuilding)
@@ -119,6 +123,12 @@ def main():
         runConversion(rawdataPath,"output.root")
     else:
 
+        global skipRun
+        if os.path.isfile("skipRun.txt"):
+            ifile = open("skipRun.txt",'r')
+            for line in ifile.readlines():
+                skipRun.append(line.rstrip())
+        
         # Run a few checks on the directories
 
         if not (os.path.isdir(rawdataPath)):
