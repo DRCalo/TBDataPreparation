@@ -30,7 +30,7 @@ class DRrootify:
         self.tbtree = ROOT.TTree("CERNSPS2025","CERNSPS2025")
         self.EventNumber = array('i',[0])
         self.EventSpill = array('i',[0])
-        #self.EventTime = array('l',[0])
+        self.EventTime = array('l',[0])
         self.NumOfPhysEv = array('i',[0])
         self.NumOfPedeEv = array('i',[0])
         self.NumOfSpilEv = array('i',[0])
@@ -41,7 +41,7 @@ class DRrootify:
 
         self.tbtree.Branch("EventNumber",self.EventNumber,'EventNumber/I')
         self.tbtree.Branch("EventSpill",self.EventSpill,'EventSpill/I')
-        #self.tbtree.Branch("EventTime",self.EventTime,'Eventday/L')
+        self.tbtree.Branch("EventTime",self.EventTime,'Eventday/L')
         self.tbtree.Branch("NumOfPhysEv",self.NumOfPhysEv,'NumOfPhysEv/I')
         self.tbtree.Branch("NumOfPedeEv",self.NumOfPedeEv,'NumOfPedeEv/I')
         self.tbtree.Branch("NumOfSpilEv",self.NumOfSpilEv,'NumOfSpilEv/I')
@@ -72,7 +72,7 @@ class DRrootify:
             print("------------")
             self.EventNumber[0] = evt.EventNumber
             self.EventSpill[0] = evt.SpillNumber
-            #self.EventTime[0] = evt.EventTime
+            self.EventTime[0] = evt.EventTime
             self.NumOfPhysEv[0] = evt.NumOfPhysEv
             self.NumOfPedeEv[0] = evt.NumOfPedeEv
             self.NumOfSpilEv[0] = evt.NumOfSpilEv
