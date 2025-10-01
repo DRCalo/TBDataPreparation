@@ -12,20 +12,24 @@ import bz2
 import subprocess
 
 ####### Hard coded information - change as you want
-#DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq"
-#MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples"
+SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawData"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawDataDreamDaq"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/mergedNtuple"
 
-DaqFileDir=""
-MergedFileDir=""
-
-outputFileNamePrefix='output_sps2024'
-DaqTreeName = "CERNSPS2024"
+outputFileNamePrefix='merged_sps2023'
+SiPMTreeName = "SiPMData"
+SiPMMetaDataTreeName = "EventInfo"
+SiPMNewTreeName = "SiPMSPS2023"
+DaqTreeName = "CERNSPS2023"
 EventInfoTreeName = "EventInfo"
+EvtOffset = -1000
+doNotMerge = False
+
 
 
 ####### main function to merge SiPM and PMT root files with names specified as arguments
     
-def CreateBlendedFile(DaqInputTree,outputfilename):
+def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     """ Main function to merge SiPM and PMT trees 
     Args:
         SiPMInputTree (TTree): H0 Tree
@@ -38,35 +42,246 @@ def CreateBlendedFile(DaqInputTree,outputfilename):
 
     OutputFile = ROOT.TFile.Open(outputfilename,"recreate")
 
+    ###### Do something to understand the offset
+
+    global EvtOffset
+    EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
+
+    if doNotMerge:
+        return 0 
+
+    ###### Now really start to merge stuff
+    
     newDaqInputTree = DaqInputTree.CloneTree()
     OutputFile.cd()
     newDaqInputTree.Write()
         
+    newEventInfoTree = EventInfoTree.CloneTree()
+    OutputFile.cd()
+    newEventInfoTree.Write()
+
+    OutputFile.cd()
+    newSiPMTree = ROOT.TTree(SiPMNewTreeName,"SiPM info")
+        
+    CloneSiPMTree(SiPMInputTree,OutputFile,DaqInputTree)
+                  
+    newSiPMTree.Write()
     OutputFile.Close()    
     return 0
 
-def formatRunNumber(runn):
+# main function to reorder and merge the SiPM file
 
-    IsList = isinstance(runn,list) or isinstance(runn,set)
-    if not IsList:
-        try:
-            f =  str(runn).zfill(4)
-        except Exception as e:
-            print('Exception in reading run number:',e)
-            print('Exiting')
-            exit()
-        return f
+def CloneSiPMTree(SiPMInput,OutputFile,DaqInputTree = None):
+    """ Create a new tree named SiPMNewTreeName("SiPMSPS2023") record board info after considering the offset.
+        The logic is the following: 
+        - start with a loop on the Daq tree. 
+        - For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId) with the offset. 
+        - Once this information is available, copy the information of the boards and save the tree
+
+    Args:
+        DaqInputTree (TTree): DaqTreeName("CERNSPS2023") Tree in H1-H8 root file
+        SiPMInput (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
+        OutputFile (TFile): Output Root file.
+    """
+    newTree = OutputFile.Get(SiPMNewTreeName)
+    TriggerTimeStampUs = array('d',[0])
+    EventNumber = array('i',[0])
+    HG_Board = []
+    LG_Board = []
+    for i in range(0,5):
+        HG_Board.append(np.array(64*[0],dtype=np.uint16))
+        LG_Board.append(np.array(64*[0],dtype=np.uint16))
+    HGinput = np.array(64*[0],dtype=np.uint16)
+    LGinput = np.array(64*[0],dtype=np.uint16)
+
+    newTree.Branch("TriggerTimeStampUs",TriggerTimeStampUs,'TriggerTimeStampUs/D')
+    newTree.Branch("HG_Board0",HG_Board[0],"HG_Board0[64]/s")
+    newTree.Branch("HG_Board1",HG_Board[1],"HG_Board1[64]/s")
+    newTree.Branch("HG_Board2",HG_Board[2],"HG_Board2[64]/s")
+    newTree.Branch("HG_Board3",HG_Board[3],"HG_Board3[64]/s")
+    newTree.Branch("HG_Board4",HG_Board[4],"HG_Board4[64]/s")
+    newTree.Branch("LG_Board0",LG_Board[0],"LG_Board0[64]/s")
+    newTree.Branch("LG_Board1",LG_Board[1],"LG_Board1[64]/s")
+    newTree.Branch("LG_Board2",LG_Board[2],"LG_Board2[64]/s")
+    newTree.Branch("LG_Board3",LG_Board[3],"LG_Board3[64]/s")
+    newTree.Branch("LG_Board4",LG_Board[4],"LG_Board4[64]/s")
+    newTree.Branch("EventNumber",EventNumber,"EventNumber/s")
+    SiPMInput.SetBranchAddress("HighGainADC",HGinput)
+    SiPMInput.SetBranchAddress("LowGainADC",LGinput)
+
+    '''The logic is the following: start with a loop on the Daq tree. For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId). Once this information is available, copy the information of the boards and save the tree''' 
+
+    entryDict = {}
+
+    for ievt,evt in enumerate(SiPMInput):
+        if evt.TriggerId in entryDict:
+            entryDict[evt.TriggerId].append(ievt)
+        else:
+            entryDict[evt.TriggerId] = [ievt]
+            
+    totalNumberOfEvents = None 
+    if DaqInputTree != None: 
+        totalNumberOfEvents = DaqInputTree.GetEntries()
     else:
-        return [formatRunNumber(i) for i in runn]
+        totalNumberOfEvents = len(entryDict)
+
+    print( "Total Number of Events from DAQ " + str(totalNumberOfEvents))
+    print( "Merging with an offset of " + str(EvtOffset))
+
+
+    
+    for daq_ev in range(0,totalNumberOfEvents):
+        if (daq_ev%10000 == 0):
+            print( str(daq_ev) + " events processed")
+
+        for iboard in range(0,5):
+            HG_Board[iboard].fill(0)
+            LG_Board[iboard].fill(0)
+
+        evtToBeStored = []
+        try:
+            evtToBeStored = entryDict[daq_ev + EvtOffset]
+        except:
+            evtToBeStored = []
+
+        for entryToBeStored in evtToBeStored:
+            SiPMInput.GetEntry(entryToBeStored)
+            #### Dirty trick to read an unsigned char from the ntuple
+            #myboard = map(ord,SiPMInput.BoardId)[0]
+            myboard = [ ord(boardID) for boardID in SiPMInput.BoardId ][0]
+            np.copyto(HG_Board[myboard],HGinput)
+            np.copyto(LG_Board[myboard],LGinput)
+            TriggerTimeStampUs[0] = SiPMInput.TriggerTimeStampUs
+        EventNumber[0] = daq_ev
         
+        newTree.Fill()
+
+
+def DetermineOffset(SiPMTree,DAQTree):
+    """ Scan possible offsets to find out for which one we get the best match 
+        between the pedList and the missing TriggerId which could be caused by pedestal.
+        Generate four plots:
+            - histo: TH1F of discrete difference along the pedestal series.
+            - histo2: TH1F of discrete difference of the events from SiPM file with no trigger.
+            - graph: TGraph of pedestals, x-axis is TriggerMask.
+            - graph2: TGraph of the events from SiPM file with no trigger, x-axis is TriggerId.
+            - graph3: TGraph of points of ( scanned offset, difference length ).
+
+    Args:
+        SiPMTree (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
+        DAQTree (TTree): DaqTreeName("CERNSPS2023") Tree in H1-H8 root file
+
+    Returns:
+        int: the Offset applied on H1-H8 matches H1-H8 to H0.
+    """
+    x = array('i')
+    y = array('i')
+    xsipm = array('i')
+    ysipm = array('i')
+    ##### build a list of entries of pedestal events in the DAQ Tree
+    DAQTree.SetBranchStatus("*",0) # disable all branches
+    DAQTree.SetBranchStatus("TriggerMask",1) # only process "TriggerMask" branch
+    pedList = set() # pedestal
+    evList = set()
+    for iev,ev in enumerate(DAQTree):
+        if ev.TriggerMask == 6:
+            pedList.add(iev)
+        evList.add(iev)
+    DAQTree.SetBranchStatus("*",1)
+    ##### Now build a list of missing TriggerId in the SiPM tree
+    SiPMTree.SetBranchStatus("*",0) # disable all branches
+    SiPMTree.SetBranchStatus("TriggerId",1) # only process "TriggerId" branch
+    TriggerIdList = set()
+    for ev in SiPMTree:
+        TriggerIdList.add(ev.TriggerId)
+    SiPMTree.SetBranchStatus("*",1)
+    ### Find the missing TriggerId
+    TrigIdComplement = evList - TriggerIdList
+    print( "from PMT file: events "+str(len(evList))+" pedestals: "+str(len(pedList)))
+    print( "from SiPM file: events with no trigger "+str(len(TrigIdComplement)))
+    #### do some diagnostic plot
+    for p in pedList:
+        x.append(p)
+        y.append(2)
+    for p2 in TrigIdComplement:
+        xsipm.append(p2)
+        ysipm.append(1)
+    hist = ROOT.TH1I("histo","histo",100, 0, 100)
+    for i in np.diff(sorted(list(pedList))):
+        hist.Fill(i)
+    hist.Write()
+    hist2 = ROOT.TH1I("histo2","histo2",100,0,100)
+    for i in np.diff(sorted(list(TrigIdComplement))):
+        hist2.Fill(i)
+    hist2.Write()
+    graph = ROOT.TGraph(len(x),x,y)
+    graph.SetTitle( "pedList; EventNumber; 2" )
+    graph2 = ROOT.TGraph(len(xsipm),xsipm,ysipm)
+    graph2.SetTitle( "SiPM no trigger; EventNumber; 1" )
+    graph2.SetMarkerStyle(6)
+    graph2.SetMarkerColor(ROOT.kRed)
+    graph.SetMarkerStyle(6)
+    graph.Write()
+    graph2.Write()
+
+    ### Scan possible offsets to find out for which one we get the best match between the pedList and the missing TriggerId
+
+    minOffset = -1000
+    minLen = 10000000
+    
+    diffLen = {}
+    
+    scanned_offset = array('i')
+    scanned_diffLen = array('i')
+
+    for offset in range(-4,5):
+        offset_set = {x+offset for x in pedList}
+        diffSet =  offset_set - TrigIdComplement
+        diffLen[offset] = len(diffSet)
+        if len(diffSet) < minLen:
+            minLen = len(diffSet)
+            minOffset = offset
+        print( "Offset " + str(offset) + ": " + str(diffLen[offset]) + " ped triggers where SiPM fired")
+        scanned_offset.append(offset)
+        scanned_diffLen.append(len(diffSet))
+    print( "Minimum value " + str(minLen) + " occurring for " + str(minOffset) + " offset")
+    
+    graph3 = ROOT.TGraph(len(scanned_offset),scanned_offset,scanned_diffLen)
+    graph3.SetMarkerStyle(6)
+    graph3.SetTitle( "offset scan; offset; diffLength" )
+    graph3.Write()
+
+    return minOffset
+
 def doRun(runnumber,outfilename):
-    formatted_runnumber = formatRunNumber(runnumber)
-    inputDaqFileName = DaqFileDir + "/sps2024data.run" + str(formatted_runnumber) + ".txt.bz2"
+    inputDaqFileName = DaqFileDir + "/sps2023data.run" + str(runnumber) + ".txt.bz2"
+    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + "_list.dat"
+    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + "_list.root"
 
     #### Check files exist and they have a  size
 
+    if not FileCheck(inputSiPMFileName):
+        return False
     if not FileCheck(inputDaqFileName):
         return False
+
+    print ('Running dataconverter on ' + inputSiPMFileName)
+
+    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
+    p.wait()
+    if p.returncode < 0: 
+        print("dataconverter failed with exit code " + strp.returncode)
+        return False
+
+    # returning trees from temporary SiPM ntuple file
+
+    if not FileCheck(tmpSiPMRootFile):
+        return False
+
+    t_SiPMRootFile = ROOT.TFile(tmpSiPMRootFile)
+
+    SiPMTree = t_SiPMRootFile.Get(SiPMTreeName)
+    EventInfoTree = t_SiPMRootFile.Get(EventInfoTreeName)
 
     # creating temporary ntuples Tree from DAQ txt file
 
@@ -86,13 +301,16 @@ def doRun(runnumber,outfilename):
         print("Cannot rootify file " + inputDaqFileName)
         return False
 
+    ##### and now merge
+    retval = CreateBlendedFile(SiPMTree,EventInfoTree,DreamDaq_rootifier.tbtree,outfilename)
+    t_SiPMRootFile.Close()
 
-    retval = CreateBlendedFile(DreamDaq_rootifier.tbtree,outfilename)
-
+    if os.path.isfile(tmpSiPMRootFile):
+        os.remove(tmpSiPMRootFile)
     if os.path.isfile("temp.root"):
         os.remove("temp.root")
-
-    return not retval 
+    
+    return retval 
     
 
 def GetNewRuns():
@@ -102,29 +320,32 @@ def GetNewRuns():
         _type_: _description_
     """
     retval = []
+    sim_list = glob.glob(SiPMFileDir + '/*')
     daq_list = glob.glob(DaqFileDir + '/*')
     merged_list = glob.glob(MergedFileDir + '/*')
 
     sim_run_list = []
 
+    for filename in sim_list:
+        sim_run_list.append(os.path.basename(filename).split('_')[0].lstrip('Run'))
+
     daq_run_list = [] 
 
     for filename in daq_list:
-        print(filename)
-        if (int(os.path.basename(filename).split('.')[1].lstrip('run'))) > 400:
-            daq_run_list.append(os.path.basename(filename).split('.')[1].lstrip('run'))
+        daq_run_list.append(os.path.basename(filename).split('.')[1].lstrip('run'))
 
     already_merged = set()
 
     for filename in merged_list:
-        print(filename) 
         already_merged.add(os.path.basename(filename).split('_')[2].split('.')[0].lstrip('run') )
-        
 
     cand_tomerge = set()
 
-    for runnum in daq_run_list:
-        cand_tomerge.add(runnum)
+    for runnum in sim_run_list:
+        if runnum in daq_run_list:
+            cand_tomerge.add(runnum)
+        else: 
+            print('Run ' + str(runnum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
     tobemerged = cand_tomerge - already_merged
 
     exclude_list = set()
@@ -139,7 +360,7 @@ def GetNewRuns():
     if (len(tobemerged) == 0):
         print("No new run to be analysed") 
     else:
-        print("Found the following new runs:")
+        print("About to run on the following runs ")
         print(tobemerged)
 
     return sorted(tobemerged)
@@ -153,68 +374,32 @@ def FileCheck(filename):
         print('Empty file ' + filename)
         return False
     return True
-
-def parseRunArgument(opt):
-
-    if not opt:
-        return []
-    try:
-        elements = opt.split(',')
-        numbers = []
-        for element in elements:
-            element = element.strip()
-            if '-' in element:  # Check if the element is a range
-                start, end = element.split('-')
-                if end == '':
-                    end = '9999'
-                if start == '':
-                    start = '0'
-                range_numbers = list(range(int(start), int(end) + 1))
-                numbers.extend(range_numbers)
-            else:  # It's a single number
-                numbers.append(int(element))
-        return numbers
-    except Exception as e:
-        print('Exception in parsing argument:',e)
-        print('Exiting')
-        exit()
-
-
+    
 
 ###############################################################
         
 def main():
     import argparse                                                                      
-    parser = argparse.ArgumentParser(description='This script runs the ntuplisation of teh 2024 data. \
+    parser = argparse.ArgumentParser(description='This script runs the merging of the "SiPM" and the "Daq" daq events. \
     The option --newFiles should be used only in TB mode, has the priority on anything else, \
-    and tries to guess which new files are there and run on them. \n \
+    and tries to guess which new files are there and merge them. \n \
     Otherwise, the user needs to provide --runNumber to run on an individual run. \
     If a file names exclude_runs.csv containing a comma-separated list of run numbers is in the current directory, those runs will be skipped.\n \
-    The script will produce a bad_run_list.csv file containing the list of runs where the rootification failed.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    The script will produce a bad_run_list.csv file containing teh list of runs where the rootification failed.')
     parser.add_argument('--output', dest='outputFileName',default='output.root',help='Output file name')
-    parser.add_argument('--runNumber',dest='runNumber',default='', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root. It supports range format e.g. "1, 2-4, 7, 10-12"')
-    parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in the directory specified by --inputDir  and processes them. To be used ONLY from the ideadr account on lxplus. Use --runNumber together with this option to filter run numbers.')
-    parser.add_argument('--inputDir',dest='inputDir',default="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/rawDataDreamDaq", help='Raw data (bz2 files) directory')
-    parser.add_argument('--outputDir',dest='outputDir',default="/afs/cern.ch/user/i/ideadr/scratch/TB2024_H8/outputNtuples", help='Directory where to store the output.')
-
+    parser.add_argument('--no_merge', dest='no_merge',action='store_true',help='Do not do the merging step')           
+    parser.add_argument('--runNumber',dest='runNumber',default='0', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root ')
+    parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' + SiPMFileDir + ' and ' + DaqFileDir + ', and merges them. To be used ONLY from the ideadr account on lxplus')
     
     par  = parser.parse_args()
-
-    global DaqFileDir
-    global MergedFileDir
-
-    DaqFileDir = par.inputDir
-    MergedFileDir = par.outputDir
+    global doNotMerge
+    doNotMerge = par.no_merge
 
     if par.newFiles:
         ##### build runnumber list
         bad_run_file = open('bad_run_list.csv','w')
         bad_run_list = set()
         rn_list = GetNewRuns()
-        rn_list = formatRunNumber(rn_list)
-        if parseRunArgument(par.runNumber):
-            rn_list = [formatRunNumber(i) for i in parseRunArgument(par.runNumber) if formatRunNumber(i) in rn_list]
-            print('Matching with the requested runs. About to run on',len(rn_list),'runs:',rn_list)
         for runNumber in rn_list:
             if par.outputFileName == 'output.root':
                 outfilename = MergedFileDir + '/' + outputFileNamePrefix + '_run' + str(runNumber) + '.root'
@@ -228,22 +413,12 @@ def main():
 
     allGood = 0
 
-    if par.runNumber and len(parseRunArgument(par.runNumber))>0 : # list is not empty
-        rlist = [i for i in parseRunArgument(par.runNumber)]
-        for runNumb in rlist:
-            print('Looking for run number',runNumb)
-            outfilename = par.outputFileName+'_'+formatRunNumber(runNumb)   
-            allgood = doRun(runNumb,outfilename)
-            print('Writing output in',outfilename)
-            if not allgood:
-                print('No good output for requested run',runNumb)
-            else:
-                allGood += 1
-    else:
-        print( 'No options provided, doing nothing')
-        print( 'use option --help to get a list of available options')
+    if par.runNumber != '0':
+        print( 'Looking for run number ' + par.runNumber)
+        outfilename = par.outputFileName 
+        allGood = doRun(par.runNumber,outfilename)
 
-    if allGood == 0:
+    if allGood != 0:
         print( 'Something went wrong. Please double check your options. If you are absolutely sure that the script should have worked, contact iacopo.vivarelli AT cern.ch')
 
 ############################################################################################# 

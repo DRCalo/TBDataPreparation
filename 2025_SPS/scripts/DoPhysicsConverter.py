@@ -4,7 +4,6 @@ import glob
 import os
 import argparse
 import re
-import ROOT
 
 
 def returnRunNumber(x: str) -> str:
@@ -29,36 +28,21 @@ def main():
         _type_: _description_
     """
     
-    parser = argparse.ArgumentParser(description='DoPhysicsConverter - a script to produce the final physics ntuples',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='DRrootify - a script to convert the ASCII output of the Auxiliary/PMT DAQ to root files')
 
     parser.add_argument('--debug', action='store_true', dest='debug',
                         default=False,
                         help='Print more information')
-    parser.add_argument('--doCalibration', action='store_true', dest='doCalibration',
-                        default=True,
-                        help='If specified, do calibration using pedestals from the json calibration file')
-    parser.add_argument('--useLocalPedestals', action='store_true', dest='useLocalPedestals',
-                        default=False,
-                        help='If specified, compute pedestals from TriggerMask==6 (see code for details)')
     parser.add_argument('-o','--output_dir', action='store', dest='ntuplepath',
-                        default='/eos/user/i/ideadr/TB2024_H8/physicsNtuples/',
-                        help='output root file path.')
+                        default='/eos/user/i/ideadr/TB2023_H8/recoNtuple/',
+                        help='output root file path')
     parser.add_argument('-i','--input_dir', action='store', dest='datapath',
-                        default='/eos/user/i/ideadr/TB2024_H8/outputNtuples/',
-                        help='input root file path.')
+                        default='/eos/user/i/ideadr/TB2023_H8/mergedNtuple/',
+                        help='input root file path')
     parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
-                        default='/afs/cern.ch/user/i/ideadr/TB2024/run/RunXXX.json',
-                        help='calibration file.')
-    parser.add_argument('-r','--run_number', action='store', dest='runNumber',
-                        default='-1000',
-                        help='If different from -1000, causes the script to run only on the indicated run number.')
+                        default='/afs/cern.ch/user/i/ideadr/TB2023/TBDataPreparation/2023_SPS/scripts/RunXXX.json',
+                        help='calibration file')
     par = parser.parse_args()
-
-
-    print("The arguments that will be used are:")
-    for arg, value in vars(par).items():
-        print(f"{arg}: {value}")
-
     
     if not os.path.isdir(par.datapath):
         print( 'ERROR! Input directory ' + par.datapath + ' does not exist.' )
@@ -71,41 +55,29 @@ def main():
     #One needs to make assumptions here on the format of the filename. Not the best.....
 
     mrgpath = par.datapath
+    mrgfls = [ returnRunNumber(x) for x in glob.glob(mrgpath+"*.root")]
     recpath = par.ntuplepath
+    recfls = [ returnRunNumber(x) for x in glob.glob(recpath+"*.root")]
+    print(mrgfls)
+    print(recfls)
+    mrgfls = list(set(mrgfls) - set(recfls))
+    
     phspath = par.ntuplepath
-    mrgfls = []
     
-    if par.runNumber  == '-1000':
+    print(mrgfls, recfls)
     
-        mrgfls = [ returnRunNumber(x) for x in glob.glob(mrgpath+"/*.root")]
-        recfls = [ returnRunNumber(x) for x in glob.glob(recpath+"/*.root")]
-        mrgfls = list(set(mrgfls) - set(recfls))
-        
-        print(mrgfls, recfls)
-        
-        if mrgfls:
-            print( str(len(mrgfls))+" new files found")
+    if mrgfls:
+        print( str(len(mrgfls))+" new files found")
 
-    else:
-        mrgfls = [par.runNumber]
 
     calFile=par.calibrationfile
-    macroPath = os.getenv('IDEARepo') + "/2024_SPS/scripts/"
-
-    # Deal with bool options
-
-    ROOT.gInterpreter.AddIncludePath("./")
-    ROOT.gInterpreter.AddIncludePath(macroPath + "/")
-    
+    macroPath = os.getenv('IDEARepo') + "/2023_SPS/scripts/"
     print(macroPath)
-    ROOT.gROOT.LoadMacro(macroPath+"PhysicsConverter.C")
-
     for fl in mrgfls:
-        print(fl)
-        print(par.datapath)
-        ROOT.PhysicsConverter(fl, par.datapath+ '/',calFile,par.doCalibration, par.useLocalPedestals)
-        
-        cmnd2 = "mv physics_sps2024_run"+fl+".root "+phspath  ### Really careful here!
+        cmnd1 = "root -l -b -q -x '"+macroPath+"PhysicsConverter.C(\""+fl+"\", \""+par.datapath+"\", \""+calFile+"\" )'"
+        print(cmnd1)
+        os.system(cmnd1)
+        cmnd2 = "mv physics_sps2023_run"+fl+".root "+phspath  ### Really careful here!
         os.system(cmnd2)
 
     if not mrgfls:
