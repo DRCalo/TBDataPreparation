@@ -19,7 +19,7 @@ ROOT.gSystem.Load("libSiPMConverter")
 bad_processing = []
 skipRun = []
 
-
+verbosityLevel = 3
    
 def getRunNumber(fname):
     runNumber = os.path.basename(fname).split('_')[0].split('.')[0].lstrip('Run')
@@ -58,6 +58,7 @@ def runConversion(ifname,ofname,doEventBuilding=True):
     global bad_processing
     checkProcess = True
     myDecoder = ROOT.SiPMDecoder()
+    global verbosityLevel
     myDecoder.SetVerbosity(verbosityLevel)
    
     checkProcess = myDecoder.ConnectFile(ifname)
@@ -115,7 +116,7 @@ def main():
     global rawntuplePath
     rawntuplePath = par.rawntuplePath
     global verbosityLevel
-    verbosityLevel = par.verbosityLevel
+    verbosityLevel = int(par.verbosityLevel)
 
     if os.path.isfile(rawdataPath):
         print("Processing a single file named " + rawdataPath)
