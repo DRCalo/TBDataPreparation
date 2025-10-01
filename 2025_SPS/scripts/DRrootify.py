@@ -57,6 +57,8 @@ class DRrootify:
 
         thisPhysicsEvents = 0
         thisPedestalEvents = 0
+        CurrentSpillNumber = 0 #spill number will start from 0
+        NumOfEventsInSpill = 0
         for i,line in enumerate(self.drf):
             
             if i%1 == 0 : print( "------>At line "+str(i))
@@ -68,20 +70,26 @@ class DRrootify:
             evt = DREvent.DRdecode(line)
             if evt==None: #skip this event
                 continue
-            if evt.TriggerMask == 5:
+            if evt.TriggerMask == 1:
                 thisPhysicsEvents += 1 # count physics and pedestal events of this run
             else:
                 thisPedestalEvents += 1
+            if CurrentSpillNumber == evt.SpillNumber:
+                NumOfEventsInSpill += 1
+            else:
+                CurrentSpillNumber = evt.SpillNumber
+                NumOfEventsInSpill = 1
             print("------------")
             print(evt.ADCs)
             print(evt.TDCs)
+            print(evt.SpillNumber)
             print("------------")
             self.EventNumber[0] = evt.EventNumber
             self.EventSpill[0] = evt.SpillNumber
             self.EventTime[0] = evt.EventTime
             self.NumOfPhysEv[0] = thisPhysicsEvents
             self.NumOfPedeEv[0] = thisPedestalEvents
-            self.NumOfSpilEv[0] = evt.NumOfSpilEv
+            self.NumOfSpilEv[0] = NumOfEventsInSpill
             self.TriggerMask[0] = evt.TriggerMask
             for ch,val in evt.ADCs.items() :
                 self.ADCs[ch] = val
