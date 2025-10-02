@@ -37,6 +37,14 @@ then
     mkdir ${IDEADIR}/run
     cd ${IDEADIR}/run
     ln -s ${IDEARepo}/${TBVER}/SIPM/scripts/SiPMConvert.py
+    #ln -s ${IDEARepo}/${TBVER}/scripts/DoPhysicsConverter.py
+    ln -s ${IDEARepo}/${TBVER}/scripts/DR_makeRootFiles.py
+    #ln -s ${IDEARepo}/${TBVER}/scripts/json.hpp
+    #ln -s ${IDEARepo}/${TBVER}/scripts/PhysicsEvent.h
+    #ln -s ${IDEARepo}/${TBVER}/scripts/DR_createMergeFromSiPMOnly.py
+    #ln -s ${IDEARepo}/${TBVER}/scripts/DRrootify.py
+    #ln -s ${IDEARepo}/${TBVER}/scripts/DoPhysicsConverter.py
+
     cd ${IDEADIR}
 fi
 

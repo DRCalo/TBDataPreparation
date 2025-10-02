@@ -8,20 +8,19 @@ import glob,time
 
 import DRrootify
 import bz2
-
-import subprocess
+import SiPMConvert
 
 ####### Hard coded information - change as you want
-SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawData"
-DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawDataDreamDaq"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/mergedNtuple"
+SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawData"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataPMT"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/mergedNtuple"
 
-outputFileNamePrefix='merged_sps2023'
-SiPMTreeName = "SiPMData"
+outputFileNamePrefix='merged_sps2025'
+SiPMTreeName = "SiPM_rawTree"
 SiPMMetaDataTreeName = "EventInfo"
-SiPMNewTreeName = "SiPMSPS2023"
-DaqTreeName = "CERNSPS2023"
-EventInfoTreeName = "EventInfo"
+SiPMNewTreeName = "SiPMSPS2025"
+DaqTreeName = "CERNSPS2025"
+EventInfoTreeName = "RunMetaData"
 EvtOffset = -1000
 doNotMerge = False
 
@@ -45,14 +44,23 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     ###### Do something to understand the offset
 
     global EvtOffset
-    EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
-
+#    EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
+    EvtOffset = 0
     if doNotMerge:
         return 0 
 
     ###### Now really start to merge stuff
+
+    # shift by taking into account the offset
     
-    newDaqInputTree = DaqInputTree.CloneTree()
+    newDaqInputTree = DaqInputTree.CloneTree(0)
+    old_nentries = DaqInputTree.GetEntries()
+
+    OutputFile.cd()
+    # Loop and fill with shifted entries
+    for i in range(old_nentries - EvtOffset):
+        DaqInputTree.GetEntry(i + EvtOffset)
+        newDaqInputTree.Fill()
     OutputFile.cd()
     newDaqInputTree.Write()
         
@@ -61,25 +69,25 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     newEventInfoTree.Write()
 
     OutputFile.cd()
-    newSiPMTree = ROOT.TTree(SiPMNewTreeName,"SiPM info")
+    newSiPMTree = SiPMInputTree.CloneTree()
         
-    CloneSiPMTree(SiPMInputTree,OutputFile,DaqInputTree)
+
                   
     newSiPMTree.Write()
     OutputFile.Close()    
     return 0
 
-# main function to reorder and merge the SiPM file
+# main function to reorder and merge the SiPM file // should not be needed anymore in 2025
 
 def CloneSiPMTree(SiPMInput,OutputFile,DaqInputTree = None):
-    """ Create a new tree named SiPMNewTreeName("SiPMSPS2023") record board info after considering the offset.
+    """ Create a new tree named SiPMNewTreeName("SiPMSPS2025") record board info after considering the offset.
         The logic is the following: 
         - start with a loop on the Daq tree. 
         - For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId) with the offset. 
         - Once this information is available, copy the information of the boards and save the tree
 
     Args:
-        DaqInputTree (TTree): DaqTreeName("CERNSPS2023") Tree in H1-H8 root file
+        DaqInputTree (TTree): DaqTreeName("CERNSPS2025") Tree in H1-H8 root file
         SiPMInput (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
         OutputFile (TFile): Output Root file.
     """
@@ -169,7 +177,7 @@ def DetermineOffset(SiPMTree,DAQTree):
 
     Args:
         SiPMTree (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
-        DAQTree (TTree): DaqTreeName("CERNSPS2023") Tree in H1-H8 root file
+        DAQTree (TTree): DaqTreeName("CERNSPS2025") Tree in H1-H8 root file
 
     Returns:
         int: the Offset applied on H1-H8 matches H1-H8 to H0.
@@ -254,9 +262,9 @@ def DetermineOffset(SiPMTree,DAQTree):
     return minOffset
 
 def doRun(runnumber,outfilename):
-    inputDaqFileName = DaqFileDir + "/sps2023data.run" + str(runnumber) + ".txt.bz2"
-    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + "_list.dat"
-    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + "_list.root"
+    inputDaqFileName = DaqFileDir + "/sps2025data.run" + str(runnumber) + ".txt.bz2"
+    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
+    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
 
     #### Check files exist and they have a  size
 
@@ -265,13 +273,15 @@ def doRun(runnumber,outfilename):
     if not FileCheck(inputDaqFileName):
         return False
 
-    print ('Running dataconverter on ' + inputSiPMFileName)
+    print ('Running data conversion (binary to SiPM on ' + inputSiPMFileName)
 
-    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
-    p.wait()
-    if p.returncode < 0: 
-        print("dataconverter failed with exit code " + strp.returncode)
-        return False
+    SiPMConvert.runConversion(inputSiPMFileName,tmpSiPMRootFile)
+
+#    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
+#    p.wait()
+#    if p.returncode < 0: 
+#        print("dataconverter failed with exit code " + strp.returncode)
+#        return False
 
     # returning trees from temporary SiPM ntuple file
 
@@ -300,7 +310,7 @@ def doRun(runnumber,outfilename):
     if not DreamDaq_rootifier.ReadandRoot():
         print("Cannot rootify file " + inputDaqFileName)
         return False
-
+    
     ##### and now merge
     retval = CreateBlendedFile(SiPMTree,EventInfoTree,DreamDaq_rootifier.tbtree,outfilename)
     t_SiPMRootFile.Close()
