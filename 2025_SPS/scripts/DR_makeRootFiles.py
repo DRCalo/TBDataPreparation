@@ -5,6 +5,7 @@ import os
 from array import array
 import numpy as np
 import glob,time
+import ctypes
 
 import DRrootify
 import bz2
@@ -44,7 +45,8 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     ###### Do something to understand the offset
 
     global EvtOffset
-#    EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
+    EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
+
     EvtOffset = 0
     if doNotMerge:
         return 0 
@@ -192,16 +194,16 @@ def DetermineOffset(SiPMTree,DAQTree):
     pedList = set() # pedestal
     evList = set()
     for iev,ev in enumerate(DAQTree):
-        if ev.TriggerMask == 6:
+        if ev.TriggerMask == 2:
             pedList.add(iev)
         evList.add(iev)
     DAQTree.SetBranchStatus("*",1)
     ##### Now build a list of missing TriggerId in the SiPM tree
     SiPMTree.SetBranchStatus("*",0) # disable all branches
-    SiPMTree.SetBranchStatus("TriggerId",1) # only process "TriggerId" branch
+    SiPMTree.SetBranchStatus("TrigID",1) # only process "TriggerId" branch
     TriggerIdList = set()
     for ev in SiPMTree:
-        TriggerIdList.add(ev.TriggerId)
+        TriggerIdList.add(ev.TrigID)
     SiPMTree.SetBranchStatus("*",1)
     ### Find the missing TriggerId
     TrigIdComplement = evList - TriggerIdList
@@ -222,9 +224,17 @@ def DetermineOffset(SiPMTree,DAQTree):
     for i in np.diff(sorted(list(TrigIdComplement))):
         hist2.Fill(i)
     hist2.Write()
-    graph = ROOT.TGraph(len(x),x,y)
+    x_array = array('d',x)
+    y_array = array('d',y)
+    x_ptr = ctypes.cast(x_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    y_ptr = ctypes.cast(y_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    graph = ROOT.TGraph(len(x_array),x_ptr,y_ptr)
     graph.SetTitle( "pedList; EventNumber; 2" )
-    graph2 = ROOT.TGraph(len(xsipm),xsipm,ysipm)
+    xsipm_array = array('d',xsipm)
+    ysipm_array = array('d',ysipm)
+    xsipm_ptr = ctypes.cast(xsipm_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    ysipm_ptr = ctypes.cast(ysipm_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    graph2 = ROOT.TGraph(len(xsipm),xsipm_ptr,ysipm_ptr)
     graph2.SetTitle( "SiPM no trigger; EventNumber; 1" )
     graph2.SetMarkerStyle(6)
     graph2.SetMarkerColor(ROOT.kRed)
@@ -262,9 +272,13 @@ def DetermineOffset(SiPMTree,DAQTree):
     return minOffset
 
 def doRun(runnumber,outfilename):
-    inputDaqFileName = DaqFileDir + "/sps2025data.run" + str(runnumber) + ".txt.bz2"
-    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
-    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
+    # inputDaqFileName = DaqFileDir + "/sps2025data.run" + str(runnumber) + ".txt.bz2"
+    # temporary for TB2025 development
+    inputDaqFileName = DaqFileDir + "/RawData-2025.09.02-10.30.39.run280.txt.bz2"
+    inputSiPMFileName = SiPMFileDir + "/Run280.0_list.dat"
+    #inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
+    #tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
+    tmpSiPMRootFile = SiPMFileDir + "/Run280.0_list.root"
 
     #### Check files exist and they have a  size
 
@@ -276,7 +290,6 @@ def doRun(runnumber,outfilename):
     print ('Running data conversion (binary to SiPM on ' + inputSiPMFileName)
 
     SiPMConvert.runConversion(inputSiPMFileName,tmpSiPMRootFile)
-
 #    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
 #    p.wait()
 #    if p.returncode < 0: 
@@ -294,7 +307,6 @@ def doRun(runnumber,outfilename):
     EventInfoTree = t_SiPMRootFile.Get(EventInfoTreeName)
 
     # creating temporary ntuples Tree from DAQ txt file
-
     f = None 
     try: 
         f = bz2.open(inputDaqFileName,'rt')
@@ -310,7 +322,7 @@ def doRun(runnumber,outfilename):
     if not DreamDaq_rootifier.ReadandRoot():
         print("Cannot rootify file " + inputDaqFileName)
         return False
-    
+
     ##### and now merge
     retval = CreateBlendedFile(SiPMTree,EventInfoTree,DreamDaq_rootifier.tbtree,outfilename)
     t_SiPMRootFile.Close()

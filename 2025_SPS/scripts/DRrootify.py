@@ -61,7 +61,7 @@ class DRrootify:
         NumOfEventsInSpill = 0
         for i,line in enumerate(self.drf):
             
-            if i%1 == 0 : print( "------>At line "+str(i))
+            if i%500 == 0 : print( "------>At line "+str(i))
             for ch in range(0,224):
                 self.TDCsval[ch] = -1
                 self.TDCscheck[ch] = -1
