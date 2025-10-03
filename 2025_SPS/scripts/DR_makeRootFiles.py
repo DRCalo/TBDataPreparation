@@ -70,102 +70,66 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     OutputFile.cd()
     newEventInfoTree.Write()
 
-    OutputFile.cd()
     newSiPMTree = SiPMInputTree.CloneTree()
-        
+    TrigID_to_entry = {}
+    for i, ev in enumerate(newSiPMTree):
+        TrigID_to_entry[ev.TrigID] = i
 
-                  
-    newSiPMTree.Write()
+    print("Loaded", len(TrigID_to_entry), "SiPM events")   
+
+    newtree = ROOT.TTree("SiPM_rawTree_aligned", "Aligned SiPM data")
+
+    # Variabili/branches (uguali a quelli originali)
+    TrigID = np.zeros(1, dtype=np.int32)
+    BoardTimeStamps = np.zeros(16, dtype=np.float64)
+    EventTimeStamp = np.zeros(1, dtype=np.float64)
+    SiPM_HG = np.zeros(1024, dtype=np.int16)
+    SiPM_LG = np.zeros(1024, dtype=np.int16)
+    SiPM_ToA = np.zeros(1024, dtype=np.float32)
+    SiPM_ToT = np.zeros(1024, dtype=np.float32)
+
+    newtree.Branch("TrigID", TrigID, "TrigID/I")
+    newtree.Branch("BoardTimeStamps", BoardTimeStamps, "BoardTimeStamps[16]/D")
+    newtree.Branch("EventTimeStamp", EventTimeStamp, "EventTimeStamp/D")
+    newtree.Branch("SiPM_HG", SiPM_HG, "SiPM_HG[1024]/S")
+    newtree.Branch("SiPM_LG", SiPM_LG, "SiPM_LG[1024]/S")
+    newtree.Branch("SiPM_ToA", SiPM_ToA, "SiPM_ToA[1024]/F")
+    newtree.Branch("SiPM_ToT", SiPM_ToT, "SiPM_ToT[1024]/F")
+
+    # ---- loop sugli eventi del tree principale CERNSPS2025 ----
+    for i, ev in enumerate(newDaqInputTree):
+        evtid = ev.EventNumber
+
+        if evtid in TrigID_to_entry:
+            # evento esiste in SiPM_rawTree
+            newSiPMTree.GetEntry(TrigID_to_entry[evtid])
+
+            TrigID[0] = newSiPMTree.TrigID
+            BoardTimeStamps[:] = newSiPMTree.BoardTimeStamps
+            EventTimeStamp[0] = newSiPMTree.EventTimeStamp
+            SiPM_HG[:] = newSiPMTree.SiPM_HG
+            SiPM_LG[:] = newSiPMTree.SiPM_LG
+            SiPM_ToA[:] = newSiPMTree.SiPM_ToA
+            SiPM_ToT[:] = newSiPMTree.SiPM_ToT
+
+        else:
+            # evento mancante: creo entry vuota
+            TrigID[0] = evtid  # oppure -1 se vuoi marcare come "vuoto"
+            BoardTimeStamps[:] = 0
+            EventTimeStamp[0] = 0
+            SiPM_HG[:] = 0
+            SiPM_LG[:] = 0
+            SiPM_ToA[:] = 0
+            SiPM_ToT[:] = 0
+
+        newtree.Fill()
+    print("New aligned tree length:", newtree.GetEntries())
+    print("PMT tree length:", newDaqInputTree.GetEntries())
+    
+    OutputFile.cd()
+    newtree.Write()
     OutputFile.Close()    
     return 0
-
-# main function to reorder and merge the SiPM file // should not be needed anymore in 2025
-
-def CloneSiPMTree(SiPMInput,OutputFile,DaqInputTree = None):
-    """ Create a new tree named SiPMNewTreeName("SiPMSPS2025") record board info after considering the offset.
-        The logic is the following: 
-        - start with a loop on the Daq tree. 
-        - For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId) with the offset. 
-        - Once this information is available, copy the information of the boards and save the tree
-
-    Args:
-        DaqInputTree (TTree): DaqTreeName("CERNSPS2025") Tree in H1-H8 root file
-        SiPMInput (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
-        OutputFile (TFile): Output Root file.
-    """
-    newTree = OutputFile.Get(SiPMNewTreeName)
-    TriggerTimeStampUs = array('d',[0])
-    EventNumber = array('i',[0])
-    HG_Board = []
-    LG_Board = []
-    for i in range(0,5):
-        HG_Board.append(np.array(64*[0],dtype=np.uint16))
-        LG_Board.append(np.array(64*[0],dtype=np.uint16))
-    HGinput = np.array(64*[0],dtype=np.uint16)
-    LGinput = np.array(64*[0],dtype=np.uint16)
-
-    newTree.Branch("TriggerTimeStampUs",TriggerTimeStampUs,'TriggerTimeStampUs/D')
-    newTree.Branch("HG_Board0",HG_Board[0],"HG_Board0[64]/s")
-    newTree.Branch("HG_Board1",HG_Board[1],"HG_Board1[64]/s")
-    newTree.Branch("HG_Board2",HG_Board[2],"HG_Board2[64]/s")
-    newTree.Branch("HG_Board3",HG_Board[3],"HG_Board3[64]/s")
-    newTree.Branch("HG_Board4",HG_Board[4],"HG_Board4[64]/s")
-    newTree.Branch("LG_Board0",LG_Board[0],"LG_Board0[64]/s")
-    newTree.Branch("LG_Board1",LG_Board[1],"LG_Board1[64]/s")
-    newTree.Branch("LG_Board2",LG_Board[2],"LG_Board2[64]/s")
-    newTree.Branch("LG_Board3",LG_Board[3],"LG_Board3[64]/s")
-    newTree.Branch("LG_Board4",LG_Board[4],"LG_Board4[64]/s")
-    newTree.Branch("EventNumber",EventNumber,"EventNumber/s")
-    SiPMInput.SetBranchAddress("HighGainADC",HGinput)
-    SiPMInput.SetBranchAddress("LowGainADC",LGinput)
-
-    '''The logic is the following: start with a loop on the Daq tree. For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId). Once this information is available, copy the information of the boards and save the tree''' 
-
-    entryDict = {}
-
-    for ievt,evt in enumerate(SiPMInput):
-        if evt.TriggerId in entryDict:
-            entryDict[evt.TriggerId].append(ievt)
-        else:
-            entryDict[evt.TriggerId] = [ievt]
-            
-    totalNumberOfEvents = None 
-    if DaqInputTree != None: 
-        totalNumberOfEvents = DaqInputTree.GetEntries()
-    else:
-        totalNumberOfEvents = len(entryDict)
-
-    print( "Total Number of Events from DAQ " + str(totalNumberOfEvents))
-    print( "Merging with an offset of " + str(EvtOffset))
-
-
-    
-    for daq_ev in range(0,totalNumberOfEvents):
-        if (daq_ev%10000 == 0):
-            print( str(daq_ev) + " events processed")
-
-        for iboard in range(0,5):
-            HG_Board[iboard].fill(0)
-            LG_Board[iboard].fill(0)
-
-        evtToBeStored = []
-        try:
-            evtToBeStored = entryDict[daq_ev + EvtOffset]
-        except:
-            evtToBeStored = []
-
-        for entryToBeStored in evtToBeStored:
-            SiPMInput.GetEntry(entryToBeStored)
-            #### Dirty trick to read an unsigned char from the ntuple
-            #myboard = map(ord,SiPMInput.BoardId)[0]
-            myboard = [ ord(boardID) for boardID in SiPMInput.BoardId ][0]
-            np.copyto(HG_Board[myboard],HGinput)
-            np.copyto(LG_Board[myboard],LGinput)
-            TriggerTimeStampUs[0] = SiPMInput.TriggerTimeStampUs
-        EventNumber[0] = daq_ev
-        
-        newTree.Fill()
-
 
 def DetermineOffset(SiPMTree,DAQTree):
     """ Scan possible offsets to find out for which one we get the best match 
