@@ -12,8 +12,8 @@ import bz2
 import SiPMConvert
 
 ####### Hard coded information - change as you want
-SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawData"
-DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataPMT"
+SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataSiPM"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataPMT_bzip"
 MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/mergedNtuple"
 
 outputFileNamePrefix='merged_sps2025'
@@ -236,13 +236,10 @@ def DetermineOffset(SiPMTree,DAQTree):
     return minOffset
 
 def doRun(runnumber,outfilename):
-    # inputDaqFileName = DaqFileDir + "/sps2025data.run" + str(runnumber) + ".txt.bz2"
-    # temporary for TB2025 development
-    inputDaqFileName = DaqFileDir + "/RawData-2025.09.02-10.30.39.run280.txt.bz2"
-    inputSiPMFileName = SiPMFileDir + "/Run280.0_list.dat"
-    #inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
-    #tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
-    tmpSiPMRootFile = SiPMFileDir + "/Run280.0_list.root"
+    inputDaqFileName = DaqFileDir + "/sps2025_run" + str(runnumber) + ".txt.bz2"
+    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
+    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
+    
 
     #### Check files exist and they have a  size
 
@@ -313,12 +310,12 @@ def GetNewRuns():
     sim_run_list = []
 
     for filename in sim_list:
-        sim_run_list.append(os.path.basename(filename).split('_')[0].lstrip('Run'))
+        sim_run_list.append(os.path.basename(filename).split('_')[0].split('.')[0].lstrip('Run'))
 
     daq_run_list = [] 
 
     for filename in daq_list:
-        daq_run_list.append(os.path.basename(filename).split('.')[1].lstrip('run'))
+        daq_run_list.append(os.path.basename(filename).split('.')[0].split('run')[1])
 
     already_merged = set()
 
@@ -390,6 +387,7 @@ def main():
             if par.outputFileName == 'output.root':
                 outfilename = MergedFileDir + '/' + outputFileNamePrefix + '_run' + str(runNumber) + '.root'
             print( '\n\nGoing to merge run ' + runNumber + ' and the output file will be ' + outfilename + '\n\n'  )
+            allgood = True
             allgood = doRun(runNumber, outfilename)
             if not allgood: 
                 bad_run_list.add(runNumber)

@@ -105,7 +105,7 @@ def convertAll(fnames,doEventBuilding = True):
 def main():
     import argparse                                                                      
     parser = argparse.ArgumentParser(description='This script onverts the binary FERs files from the Janus software to root ntuples.',     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-i', '--inputRawDataPath', dest='rawdataPath', default='/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawData', help='Input path of raw data. If it is a file, only this one will be processed. If it is a directory, all files fill be processed. Assuming file names like ' + ifile_basename)
+    parser.add_argument('-i', '--inputRawDataPath', dest='rawdataPath', default='/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataSiPM', help='Input path of raw data. If it is a file, only this one will be processed. If it is a directory, all files fill be processed. Assuming file names like ' + ifile_basename)
     parser.add_argument('-o', '--outputRawNtuplePath', dest='rawntuplePath', default='/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawNtupleSiPM', help='Output path for the raw ntuples')
     parser.add_argument('-V', '--verbosityLevel', dest='verbosityLevel', default=3, help="Controls the verbosity level - Remember:  0=Quiet, 1=Error, 2=Warn, 3=Info, 4=Pedantic" )
     parser.add_argument('--forceAll', action='store_true',help='Forces reprocessing all files.')
@@ -118,10 +118,12 @@ def main():
     global verbosityLevel
     verbosityLevel = int(par.verbosityLevel)
 
+    doEventBuilding = not par.noEventBuilding
+    
     if os.path.isfile(rawdataPath):
         print("Processing a single file named " + rawdataPath)
         print("The output file will be output.root")
-        runConversion(rawdataPath,"output.root")
+        runConversion(rawdataPath,"output.root",doEventBuilding)
     else:
 
         global skipRun
@@ -158,7 +160,6 @@ def main():
             print(toConvert)
             print ("\n\n")
 
-            doEventBuilding = not par.noEventBuilding
             convertAll(toConvert,doEventBuilding)
         else:
             print("No new file to be converted \n\n")
