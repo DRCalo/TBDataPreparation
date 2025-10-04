@@ -42,7 +42,8 @@ then
     #ln -s ${IDEARepo}/${TBVER}/scripts/json.hpp
     #ln -s ${IDEARepo}/${TBVER}/scripts/PhysicsEvent.h
     #ln -s ${IDEARepo}/${TBVER}/scripts/DR_createMergeFromSiPMOnly.py
-    #ln -s ${IDEARepo}/${TBVER}/scripts/DRrootify.py
+    ln -s ${IDEARepo}/${TBVER}/scripts/DRrootify.py
+    ln -s ${IDEARepo}/${TBVER}/scripts/bzipPMTfiles.py
     #ln -s ${IDEARepo}/${TBVER}/scripts/DoPhysicsConverter.py
 
     cd ${IDEADIR}
