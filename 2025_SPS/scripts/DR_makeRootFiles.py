@@ -14,7 +14,7 @@ import SiPMConvert
 ####### Hard coded information - change as you want
 SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataSiPM"
 DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataPMT_bzip"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/mergedNtuple"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/mergedNtuples"
 
 outputFileNamePrefix='merged_sps2025'
 SiPMTreeName = "SiPM_rawTree"
@@ -320,7 +320,7 @@ def GetNewRuns():
     already_merged = set()
 
     for filename in merged_list:
-        already_merged.add(os.path.basename(filename).split('_')[2].split('.')[0].lstrip('run') )
+        already_merged.add(os.path.basename(filename).split('_')[1].split('.')[0].lstrip('run') )
 
     cand_tomerge = set()
 
@@ -387,7 +387,7 @@ def main():
             if par.outputFileName == 'output.root':
                 outfilename = MergedFileDir + '/' + outputFileNamePrefix + '_run' + str(runNumber) + '.root'
             print( '\n\nGoing to merge run ' + runNumber + ' and the output file will be ' + outfilename + '\n\n'  )
-            allgood = True
+
             allgood = doRun(runNumber, outfilename)
             if not allgood: 
                 bad_run_list.add(runNumber)
