@@ -118,10 +118,12 @@ def main():
     global verbosityLevel
     verbosityLevel = int(par.verbosityLevel)
 
+    doEventBuilding = not par.noEventBuilding
+    
     if os.path.isfile(rawdataPath):
         print("Processing a single file named " + rawdataPath)
         print("The output file will be output.root")
-        runConversion(rawdataPath,"output.root")
+        runConversion(rawdataPath,"output.root",doEventBuilding)
     else:
 
         global skipRun
@@ -158,7 +160,6 @@ def main():
             print(toConvert)
             print ("\n\n")
 
-            doEventBuilding = not par.noEventBuilding
             convertAll(toConvert,doEventBuilding)
         else:
             print("No new file to be converted \n\n")

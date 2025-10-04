@@ -59,16 +59,14 @@ void SiPMEvent::ComputeEventTimeStamp()
      Otherwise, the default value of -1 is kept. 
   */
 
-  const double EPSILON = 1e-3; // This should be one ns
+  const double EPSILON = 1; // This should be 1 mus
 
   double l_evTimeStamp = -1;
-
   for (auto timeStamp : m_timeStamps){
     if (l_evTimeStamp < 0){
       // l_evTimeStamp not set yet
       if (timeStamp >= 0){ //otherwise the board is not read
-	l_evTimeStamp = timeStamp;
-	
+	l_evTimeStamp = timeStamp;	
       }
     } else { // l_evTimeStamp was set. Now check that the two doubles are really close (avoid checking that two doubles are equal
       if (timeStamp >= 0){
@@ -80,8 +78,10 @@ void SiPMEvent::ComputeEventTimeStamp()
     }
   }
 
+
+
   // whatever the value of l_evTimeStamp, set the class variable to that
 
   m_evTimeStamp = l_evTimeStamp;
-  
+
 }

@@ -5,23 +5,23 @@ import os
 from array import array
 import numpy as np
 import glob,time
+import ctypes
 
 import DRrootify
 import bz2
-
-import subprocess
+import SiPMConvert
 
 ####### Hard coded information - change as you want
-SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawData"
-DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/rawDataDreamDaq"
-MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2023_H8/mergedNtuple"
+SiPMFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataSiPM"
+DaqFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/rawDataPMT_bzip"
+MergedFileDir="/afs/cern.ch/user/i/ideadr/scratch/TB2025_H8/mergedNtuples"
 
-outputFileNamePrefix='merged_sps2023'
-SiPMTreeName = "SiPMData"
+outputFileNamePrefix='merged_sps2025'
+SiPMTreeName = "SiPM_rawTree"
 SiPMMetaDataTreeName = "EventInfo"
-SiPMNewTreeName = "SiPMSPS2023"
-DaqTreeName = "CERNSPS2023"
-EventInfoTreeName = "EventInfo"
+SiPMNewTreeName = "SiPMSPS2025"
+DaqTreeName = "CERNSPS2025"
+EventInfoTreeName = "RunMetaData"
 EvtOffset = -1000
 doNotMerge = False
 
@@ -47,12 +47,22 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     global EvtOffset
     EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
 
+    EvtOffset = 0
     if doNotMerge:
         return 0 
 
     ###### Now really start to merge stuff
+
+    # shift by taking into account the offset
     
-    newDaqInputTree = DaqInputTree.CloneTree()
+    newDaqInputTree = DaqInputTree.CloneTree(0)
+    old_nentries = DaqInputTree.GetEntries()
+
+    OutputFile.cd()
+    # Loop and fill with shifted entries
+    for i in range(old_nentries - EvtOffset):
+        DaqInputTree.GetEntry(i + EvtOffset)
+        newDaqInputTree.Fill()
     OutputFile.cd()
     newDaqInputTree.Write()
         
@@ -60,102 +70,66 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     OutputFile.cd()
     newEventInfoTree.Write()
 
+    newSiPMTree = SiPMInputTree.CloneTree()
+    TrigID_to_entry = {}
+    for i, ev in enumerate(newSiPMTree):
+        TrigID_to_entry[ev.TrigID] = i
+
+    print("Loaded", len(TrigID_to_entry), "SiPM events")   
+
+    newtree = ROOT.TTree("SiPM_rawTree_aligned", "Aligned SiPM data")
+
+    # Variabili/branches (uguali a quelli originali)
+    TrigID = np.zeros(1, dtype=np.int32)
+    BoardTimeStamps = np.zeros(16, dtype=np.float64)
+    EventTimeStamp = np.zeros(1, dtype=np.float64)
+    SiPM_HG = np.zeros(1024, dtype=np.int16)
+    SiPM_LG = np.zeros(1024, dtype=np.int16)
+    SiPM_ToA = np.zeros(1024, dtype=np.float32)
+    SiPM_ToT = np.zeros(1024, dtype=np.float32)
+
+    newtree.Branch("TrigID", TrigID, "TrigID/I")
+    newtree.Branch("BoardTimeStamps", BoardTimeStamps, "BoardTimeStamps[16]/D")
+    newtree.Branch("EventTimeStamp", EventTimeStamp, "EventTimeStamp/D")
+    newtree.Branch("SiPM_HG", SiPM_HG, "SiPM_HG[1024]/S")
+    newtree.Branch("SiPM_LG", SiPM_LG, "SiPM_LG[1024]/S")
+    newtree.Branch("SiPM_ToA", SiPM_ToA, "SiPM_ToA[1024]/F")
+    newtree.Branch("SiPM_ToT", SiPM_ToT, "SiPM_ToT[1024]/F")
+
+    # ---- loop sugli eventi del tree principale CERNSPS2025 ----
+    for i, ev in enumerate(newDaqInputTree):
+        evtid = ev.EventNumber
+
+        if evtid in TrigID_to_entry:
+            # evento esiste in SiPM_rawTree
+            newSiPMTree.GetEntry(TrigID_to_entry[evtid])
+
+            TrigID[0] = newSiPMTree.TrigID
+            BoardTimeStamps[:] = newSiPMTree.BoardTimeStamps
+            EventTimeStamp[0] = newSiPMTree.EventTimeStamp
+            SiPM_HG[:] = newSiPMTree.SiPM_HG
+            SiPM_LG[:] = newSiPMTree.SiPM_LG
+            SiPM_ToA[:] = newSiPMTree.SiPM_ToA
+            SiPM_ToT[:] = newSiPMTree.SiPM_ToT
+
+        else:
+            # evento mancante: creo entry vuota
+            TrigID[0] = evtid  # oppure -1 se vuoi marcare come "vuoto"
+            BoardTimeStamps[:] = 0
+            EventTimeStamp[0] = 0
+            SiPM_HG[:] = 0
+            SiPM_LG[:] = 0
+            SiPM_ToA[:] = 0
+            SiPM_ToT[:] = 0
+
+        newtree.Fill()
+    print("New aligned tree length:", newtree.GetEntries())
+    print("PMT tree length:", newDaqInputTree.GetEntries())
+    
     OutputFile.cd()
-    newSiPMTree = ROOT.TTree(SiPMNewTreeName,"SiPM info")
-        
-    CloneSiPMTree(SiPMInputTree,OutputFile,DaqInputTree)
-                  
-    newSiPMTree.Write()
+    newtree.Write()
     OutputFile.Close()    
     return 0
-
-# main function to reorder and merge the SiPM file
-
-def CloneSiPMTree(SiPMInput,OutputFile,DaqInputTree = None):
-    """ Create a new tree named SiPMNewTreeName("SiPMSPS2023") record board info after considering the offset.
-        The logic is the following: 
-        - start with a loop on the Daq tree. 
-        - For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId) with the offset. 
-        - Once this information is available, copy the information of the boards and save the tree
-
-    Args:
-        DaqInputTree (TTree): DaqTreeName("CERNSPS2023") Tree in H1-H8 root file
-        SiPMInput (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
-        OutputFile (TFile): Output Root file.
-    """
-    newTree = OutputFile.Get(SiPMNewTreeName)
-    TriggerTimeStampUs = array('d',[0])
-    EventNumber = array('i',[0])
-    HG_Board = []
-    LG_Board = []
-    for i in range(0,5):
-        HG_Board.append(np.array(64*[0],dtype=np.uint16))
-        LG_Board.append(np.array(64*[0],dtype=np.uint16))
-    HGinput = np.array(64*[0],dtype=np.uint16)
-    LGinput = np.array(64*[0],dtype=np.uint16)
-
-    newTree.Branch("TriggerTimeStampUs",TriggerTimeStampUs,'TriggerTimeStampUs/D')
-    newTree.Branch("HG_Board0",HG_Board[0],"HG_Board0[64]/s")
-    newTree.Branch("HG_Board1",HG_Board[1],"HG_Board1[64]/s")
-    newTree.Branch("HG_Board2",HG_Board[2],"HG_Board2[64]/s")
-    newTree.Branch("HG_Board3",HG_Board[3],"HG_Board3[64]/s")
-    newTree.Branch("HG_Board4",HG_Board[4],"HG_Board4[64]/s")
-    newTree.Branch("LG_Board0",LG_Board[0],"LG_Board0[64]/s")
-    newTree.Branch("LG_Board1",LG_Board[1],"LG_Board1[64]/s")
-    newTree.Branch("LG_Board2",LG_Board[2],"LG_Board2[64]/s")
-    newTree.Branch("LG_Board3",LG_Board[3],"LG_Board3[64]/s")
-    newTree.Branch("LG_Board4",LG_Board[4],"LG_Board4[64]/s")
-    newTree.Branch("EventNumber",EventNumber,"EventNumber/s")
-    SiPMInput.SetBranchAddress("HighGainADC",HGinput)
-    SiPMInput.SetBranchAddress("LowGainADC",LGinput)
-
-    '''The logic is the following: start with a loop on the Daq tree. For each event find out which entries of the SiPMInput need to be looked at (those with corresponding TriggerId). Once this information is available, copy the information of the boards and save the tree''' 
-
-    entryDict = {}
-
-    for ievt,evt in enumerate(SiPMInput):
-        if evt.TriggerId in entryDict:
-            entryDict[evt.TriggerId].append(ievt)
-        else:
-            entryDict[evt.TriggerId] = [ievt]
-            
-    totalNumberOfEvents = None 
-    if DaqInputTree != None: 
-        totalNumberOfEvents = DaqInputTree.GetEntries()
-    else:
-        totalNumberOfEvents = len(entryDict)
-
-    print( "Total Number of Events from DAQ " + str(totalNumberOfEvents))
-    print( "Merging with an offset of " + str(EvtOffset))
-
-
-    
-    for daq_ev in range(0,totalNumberOfEvents):
-        if (daq_ev%10000 == 0):
-            print( str(daq_ev) + " events processed")
-
-        for iboard in range(0,5):
-            HG_Board[iboard].fill(0)
-            LG_Board[iboard].fill(0)
-
-        evtToBeStored = []
-        try:
-            evtToBeStored = entryDict[daq_ev + EvtOffset]
-        except:
-            evtToBeStored = []
-
-        for entryToBeStored in evtToBeStored:
-            SiPMInput.GetEntry(entryToBeStored)
-            #### Dirty trick to read an unsigned char from the ntuple
-            #myboard = map(ord,SiPMInput.BoardId)[0]
-            myboard = [ ord(boardID) for boardID in SiPMInput.BoardId ][0]
-            np.copyto(HG_Board[myboard],HGinput)
-            np.copyto(LG_Board[myboard],LGinput)
-            TriggerTimeStampUs[0] = SiPMInput.TriggerTimeStampUs
-        EventNumber[0] = daq_ev
-        
-        newTree.Fill()
-
 
 def DetermineOffset(SiPMTree,DAQTree):
     """ Scan possible offsets to find out for which one we get the best match 
@@ -169,7 +143,7 @@ def DetermineOffset(SiPMTree,DAQTree):
 
     Args:
         SiPMTree (TTree): SiPMTreeName("SiPMData") Tree in H0 root file
-        DAQTree (TTree): DaqTreeName("CERNSPS2023") Tree in H1-H8 root file
+        DAQTree (TTree): DaqTreeName("CERNSPS2025") Tree in H1-H8 root file
 
     Returns:
         int: the Offset applied on H1-H8 matches H1-H8 to H0.
@@ -184,16 +158,16 @@ def DetermineOffset(SiPMTree,DAQTree):
     pedList = set() # pedestal
     evList = set()
     for iev,ev in enumerate(DAQTree):
-        if ev.TriggerMask == 6:
+        if ev.TriggerMask == 2:
             pedList.add(iev)
         evList.add(iev)
     DAQTree.SetBranchStatus("*",1)
     ##### Now build a list of missing TriggerId in the SiPM tree
     SiPMTree.SetBranchStatus("*",0) # disable all branches
-    SiPMTree.SetBranchStatus("TriggerId",1) # only process "TriggerId" branch
+    SiPMTree.SetBranchStatus("TrigID",1) # only process "TriggerId" branch
     TriggerIdList = set()
     for ev in SiPMTree:
-        TriggerIdList.add(ev.TriggerId)
+        TriggerIdList.add(ev.TrigID)
     SiPMTree.SetBranchStatus("*",1)
     ### Find the missing TriggerId
     TrigIdComplement = evList - TriggerIdList
@@ -214,9 +188,17 @@ def DetermineOffset(SiPMTree,DAQTree):
     for i in np.diff(sorted(list(TrigIdComplement))):
         hist2.Fill(i)
     hist2.Write()
-    graph = ROOT.TGraph(len(x),x,y)
+    x_array = array('d',x)
+    y_array = array('d',y)
+    x_ptr = ctypes.cast(x_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    y_ptr = ctypes.cast(y_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    graph = ROOT.TGraph(len(x_array),x_ptr,y_ptr)
     graph.SetTitle( "pedList; EventNumber; 2" )
-    graph2 = ROOT.TGraph(len(xsipm),xsipm,ysipm)
+    xsipm_array = array('d',xsipm)
+    ysipm_array = array('d',ysipm)
+    xsipm_ptr = ctypes.cast(xsipm_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    ysipm_ptr = ctypes.cast(ysipm_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
+    graph2 = ROOT.TGraph(len(xsipm),xsipm_ptr,ysipm_ptr)
     graph2.SetTitle( "SiPM no trigger; EventNumber; 1" )
     graph2.SetMarkerStyle(6)
     graph2.SetMarkerColor(ROOT.kRed)
@@ -254,9 +236,10 @@ def DetermineOffset(SiPMTree,DAQTree):
     return minOffset
 
 def doRun(runnumber,outfilename):
-    inputDaqFileName = DaqFileDir + "/sps2023data.run" + str(runnumber) + ".txt.bz2"
-    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + "_list.dat"
-    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + "_list.root"
+    inputDaqFileName = DaqFileDir + "/sps2025_run" + str(runnumber) + ".txt.bz2"
+    inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
+    tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
+    
 
     #### Check files exist and they have a  size
 
@@ -265,13 +248,14 @@ def doRun(runnumber,outfilename):
     if not FileCheck(inputDaqFileName):
         return False
 
-    print ('Running dataconverter on ' + inputSiPMFileName)
+    print ('Running data conversion (binary to SiPM on ' + inputSiPMFileName)
 
-    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
-    p.wait()
-    if p.returncode < 0: 
-        print("dataconverter failed with exit code " + strp.returncode)
-        return False
+    SiPMConvert.runConversion(inputSiPMFileName,tmpSiPMRootFile)
+#    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
+#    p.wait()
+#    if p.returncode < 0: 
+#        print("dataconverter failed with exit code " + strp.returncode)
+#        return False
 
     # returning trees from temporary SiPM ntuple file
 
@@ -284,7 +268,6 @@ def doRun(runnumber,outfilename):
     EventInfoTree = t_SiPMRootFile.Get(EventInfoTreeName)
 
     # creating temporary ntuples Tree from DAQ txt file
-
     f = None 
     try: 
         f = bz2.open(inputDaqFileName,'rt')
@@ -327,17 +310,17 @@ def GetNewRuns():
     sim_run_list = []
 
     for filename in sim_list:
-        sim_run_list.append(os.path.basename(filename).split('_')[0].lstrip('Run'))
+        sim_run_list.append(os.path.basename(filename).split('_')[0].split('.')[0].lstrip('Run'))
 
     daq_run_list = [] 
 
     for filename in daq_list:
-        daq_run_list.append(os.path.basename(filename).split('.')[1].lstrip('run'))
+        daq_run_list.append(os.path.basename(filename).split('.')[0].split('run')[1])
 
     already_merged = set()
 
     for filename in merged_list:
-        already_merged.add(os.path.basename(filename).split('_')[2].split('.')[0].lstrip('run') )
+        already_merged.add(os.path.basename(filename).split('_')[1].split('.')[0].lstrip('run') )
 
     cand_tomerge = set()
 
@@ -404,6 +387,7 @@ def main():
             if par.outputFileName == 'output.root':
                 outfilename = MergedFileDir + '/' + outputFileNamePrefix + '_run' + str(runNumber) + '.root'
             print( '\n\nGoing to merge run ' + runNumber + ' and the output file will be ' + outfilename + '\n\n'  )
+
             allgood = doRun(runNumber, outfilename)
             if not allgood: 
                 bad_run_list.add(runNumber)

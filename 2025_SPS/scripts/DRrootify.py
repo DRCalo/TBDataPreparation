@@ -61,7 +61,7 @@ class DRrootify:
         NumOfEventsInSpill = 0
         for i,line in enumerate(self.drf):
             
-            if i%1 == 0 : print( "------>At line "+str(i))
+            if i%500 == 0 : print( "------>At line "+str(i))
             for ch in range(0,224):
                 self.TDCsval[ch] = -1
                 self.TDCscheck[ch] = -1
@@ -79,11 +79,11 @@ class DRrootify:
             else:
                 CurrentSpillNumber = evt.SpillNumber
                 NumOfEventsInSpill = 1
-            print("------------")
-            print(evt.ADCs)
-            print(evt.TDCs)
-            print(evt.SpillNumber)
-            print("------------")
+            #print("------------")
+            #print(evt.ADCs)
+            #print(evt.TDCs)
+            #print(evt.SpillNumber)
+            #print("------------")
             self.EventNumber[0] = evt.EventNumber
             self.EventSpill[0] = evt.SpillNumber
             self.EventTime[0] = evt.EventTime
