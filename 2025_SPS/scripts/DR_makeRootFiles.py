@@ -308,27 +308,44 @@ def GetNewRuns():
     merged_list = glob.glob(MergedFileDir + '/*')
 
     sim_run_list = []
+    
 
     for filename in sim_list:
         sim_run_list.append(os.path.basename(filename).split('_')[0].split('.')[0].lstrip('Run'))
 
-    daq_run_list = [] 
+    print ("sim_run_list ")
+    print(sim_run_list)
+
+    daq_run_list = []
 
     for filename in daq_list:
         daq_run_list.append(os.path.basename(filename).split('.')[0].split('run')[1])
 
+    print ("daq_run_list ")
+    print(daq_run_list)
+
+
     already_merged = set()
 
+    print("merged_list")
+    print(merged_list)
+
     for filename in merged_list:
-        already_merged.add(os.path.basename(filename).split('_')[1].split('.')[0].lstrip('run') )
+        print(os.path.basename(filename).split('_'))
+        already_merged.add(os.path.basename(filename).split('_')[2].split('.')[0].lstrip('run') )
+
+    print ("already_merged ")
+    print(already_merged)
 
     cand_tomerge = set()
+    
 
     for runnum in sim_run_list:
         if runnum in daq_run_list:
             cand_tomerge.add(runnum)
-        else: 
-            print('Run ' + str(runnum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
+        else:
+            pass
+#            print('Run ' + str(runnum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
     tobemerged = cand_tomerge - already_merged
 
     exclude_list = set()
@@ -344,7 +361,7 @@ def GetNewRuns():
         print("No new run to be analysed") 
     else:
         print("About to run on the following runs ")
-        print(tobemerged)
+#        print(tobemerged)
 
     return sorted(tobemerged)
 
@@ -388,6 +405,7 @@ def main():
                 outfilename = MergedFileDir + '/' + outputFileNamePrefix + '_run' + str(runNumber) + '.root'
             print( '\n\nGoing to merge run ' + runNumber + ' and the output file will be ' + outfilename + '\n\n'  )
 
+#            allgood = True
             allgood = doRun(runNumber, outfilename)
             if not allgood: 
                 bad_run_list.add(runNumber)
