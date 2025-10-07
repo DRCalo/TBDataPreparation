@@ -47,7 +47,6 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     global EvtOffset
     EvtOffset = DetermineOffset(SiPMInputTree,DaqInputTree)
 
-    EvtOffset = 0
     if doNotMerge:
         return 0 
 
@@ -55,27 +54,31 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
 
     # shift by taking into account the offset
     
-    newDaqInputTree = DaqInputTree.CloneTree(0)
+    newDaqInputTree = DaqInputTree.CloneTree()
     old_nentries = DaqInputTree.GetEntries()
 
     OutputFile.cd()
     # Loop and fill with shifted entries
-    for i in range(old_nentries - EvtOffset):
-        DaqInputTree.GetEntry(i + EvtOffset)
-        newDaqInputTree.Fill()
+#    for i in range(old_nentries - EvtOffset):
+#        DaqInputTree.GetEntry(i + EvtOffset)
+#        newDaqInputTree.Fill()
     OutputFile.cd()
-    newDaqInputTree.Write()
+    newDaqInputTree.Write("", ROOT.TObject.kOverwrite)
         
     newEventInfoTree = EventInfoTree.CloneTree()
     OutputFile.cd()
-    newEventInfoTree.Write()
+    newEventInfoTree.Write("", ROOT.TObject.kOverwrite)
 
-    newSiPMTree = SiPMInputTree.CloneTree()
-    TrigID_to_entry = {}
-    for i, ev in enumerate(newSiPMTree):
-        TrigID_to_entry[ev.TrigID] = i
+    # building a list of available trigID
+    #TrigID_to_entry = {}
+    TrigIDs = []
+    SiPMInputTree.BuildIndex("TrigID")
 
-    print("Loaded", len(TrigID_to_entry), "SiPM events")   
+    #for ev in enumerate(SiPMInputTree):
+    #    TrigIDs.append(ev.TrigID)
+        
+    print("SiPM events: " + str(SiPMInputTree.GetEntries()))   
+#    TrigIDs[:] = [n for n in TrigIDs if n >= EvtOffset]
 
     newtree = ROOT.TTree("SiPM_rawTree_aligned", "Aligned SiPM data")
 
@@ -98,25 +101,24 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
 
     # ---- loop sugli eventi del tree principale CERNSPS2025 ----
     for i, ev in enumerate(newDaqInputTree):
-        evtid = ev.EventNumber
+        ## try to get the entry corresponding to teh computed offset 
+#        evtid = ev.EventNumber
+        candTrigID = i + EvtOffset
+        entry_bytes = SiPMInputTree.GetEntryWithIndex(candTrigID)
+  
+        if entry_bytes > 0: ## event found 
+            TrigID[0] = SiPMInputTree.TrigID
+            BoardTimeStamps[:] = SiPMInputTree.BoardTimeStamps
+            EventTimeStamp[0] = SiPMInputTree.EventTimeStamp
+            SiPM_HG[:] = SiPMInputTree.SiPM_HG
+            SiPM_LG[:] = SiPMInputTree.SiPM_LG
+            SiPM_ToA[:] = SiPMInputTree.SiPM_ToA
+            SiPM_ToT[:] = SiPMInputTree.SiPM_ToT
 
-        if evtid in TrigID_to_entry:
-            # evento esiste in SiPM_rawTree
-            newSiPMTree.GetEntry(TrigID_to_entry[evtid])
-
-            TrigID[0] = newSiPMTree.TrigID
-            BoardTimeStamps[:] = newSiPMTree.BoardTimeStamps
-            EventTimeStamp[0] = newSiPMTree.EventTimeStamp
-            SiPM_HG[:] = newSiPMTree.SiPM_HG
-            SiPM_LG[:] = newSiPMTree.SiPM_LG
-            SiPM_ToA[:] = newSiPMTree.SiPM_ToA
-            SiPM_ToT[:] = newSiPMTree.SiPM_ToT
-
-        else:
-            # evento mancante: creo entry vuota
-            TrigID[0] = evtid  # oppure -1 se vuoi marcare come "vuoto"
+        else: ## the event was not found, either because not written or because candTrigID was negative (more event in Daq file 
+            TrigID[0] = -1
             BoardTimeStamps[:] = 0
-            EventTimeStamp[0] = 0
+            EventTimeStamp[0] = -1
             SiPM_HG[:] = 0
             SiPM_LG[:] = 0
             SiPM_ToA[:] = 0
@@ -127,7 +129,7 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
     print("PMT tree length:", newDaqInputTree.GetEntries())
     
     OutputFile.cd()
-    newtree.Write()
+    newtree.Write("", ROOT.TObject.kOverwrite)
     OutputFile.Close()    
     return 0
 

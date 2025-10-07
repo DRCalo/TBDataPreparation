@@ -1,0 +1,16 @@
+executable = HTCondor.sh
+universe = vanilla
+
+request_cpus = 1
+stream_output = True
+stream_error = True
++JobFlavour = "espresso"
+
+output = output/job.$(ClusterId).$(ProcId).out
+error  = error/job.$(ClusterId).$(ProcId).err
+log    = log/job.$(ClusterId).$(ProcId).log
+
+arguments = $(RunNumber)
+
+queue RunNumber from runs.list
+
