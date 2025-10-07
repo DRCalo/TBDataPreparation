@@ -315,29 +315,16 @@ def GetNewRuns():
     for filename in sim_list:
         sim_run_list.append(os.path.basename(filename).split('_')[0].split('.')[0].lstrip('Run'))
 
-    print ("sim_run_list ")
-    print(sim_run_list)
-
     daq_run_list = []
 
     for filename in daq_list:
         daq_run_list.append(os.path.basename(filename).split('.')[0].split('run')[1])
 
-    print ("daq_run_list ")
-    print(daq_run_list)
-
-
     already_merged = set()
-
-    print("merged_list")
-    print(merged_list)
 
     for filename in merged_list:
         print(os.path.basename(filename).split('_'))
         already_merged.add(os.path.basename(filename).split('_')[2].split('.')[0].lstrip('run') )
-
-    print ("already_merged ")
-    print(already_merged)
 
     cand_tomerge = set()
     
@@ -347,7 +334,7 @@ def GetNewRuns():
             cand_tomerge.add(runnum)
         else:
             pass
-#            print('Run ' + str(runnum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
+            print('Run ' + str(runnum) + ' is available in ' + SiPMFileDir + ' but not in ' + DaqFileDir)
     tobemerged = cand_tomerge - already_merged
 
     exclude_list = set()
@@ -361,9 +348,6 @@ def GetNewRuns():
 
     if (len(tobemerged) == 0):
         print("No new run to be analysed") 
-    else:
-        print("About to run on the following runs ")
-#        print(tobemerged)
 
     return sorted(tobemerged)
 
@@ -392,10 +376,19 @@ def main():
     parser.add_argument('--no_merge', dest='no_merge',action='store_true',help='Do not do the merging step')           
     parser.add_argument('--runNumber',dest='runNumber',default='0', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root ')
     parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' + SiPMFileDir + ' and ' + DaqFileDir + ', and merges them. To be used ONLY from the ideadr account on lxplus')
+    parser.add_argument("--newRunsList",dest='newRunsList',action='store_true', default=False, help='Only produce a list of new runs to be processed in runs.list') 
     
     par  = parser.parse_args()
     global doNotMerge
     doNotMerge = par.no_merge
+
+    if par.newRunsList:
+        file_list = open('runs.list','w')
+        run_list = GetNewRuns()
+        for runnumber in run_list:
+            file_list.write(runnumber + '\n')
+        file_list.close()
+        return
 
     if par.newFiles:
         ##### build runnumber list
