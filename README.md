@@ -5,7 +5,7 @@
 ```
 mkdir My_Workspace
 cd My_Workspace
-git clone https://github.com/DRCalo/TBDataPreparation.git
+git clone --recurse-submodules https://github.com/DRCalo/TBDataPreparation.git
 TBDataPreparation/init.sh
 source setup.sh  # this needs to be called each time one starts with new shell
 ```
