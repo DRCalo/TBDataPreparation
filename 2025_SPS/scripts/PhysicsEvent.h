@@ -6,55 +6,76 @@
 //          Edoardo Proserpio (Uni Insubria)
 //          Iacopo Vivarelli (Uni Sussex)
 // \start date: 20 August 2021
+// reviewed in August 2024 by Iacopo Vivarelli
+// reviewed again in 2025 by Iacopo Vivarelli 
 //**************************************************
 
 #include <iostream>
+#include <map>
 #include <array>
 #include <stdint.h>
 #include <string>
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <stdexcept>
+
+#include "EventOut.h"
 
 #include <TProfile.h> 
 
-#ifndef Event_H
-#define Event_H
+#ifndef PhysicsEvent_H
+#define PhysicsEvent_H
 
 using json = nlohmann::json;
 
 double const sq3=sqrt(3.);
 
-struct SiPMCalibration{
-    std::array<double,320> highGainPedestal,highGainDpp,lowGainPedestal,lowGainDpp;
-    std::array<double,1> PheGeVS,PheGeVC;
-    SiPMCalibration(const std::string&);
-};
 
-SiPMCalibration::SiPMCalibration(const std::string& fname){
-    std::ifstream inFile(fname,std::ifstream::in);
-    json jFile;
-    inFile >> jFile;
-    highGainPedestal = jFile["Calibrations"]["SiPM"]["highGainPedestal"];
-    highGainDpp = jFile["Calibrations"]["SiPM"]["highGainDpp"];
-    lowGainPedestal = jFile["Calibrations"]["SiPM"]["lowGainPedestal"];
-    lowGainDpp = jFile["Calibrations"]["SiPM"]["lowGainDpp"];
-    PheGeVS = jFile["Calibrations"]["SiPM"]["PhetoGeVS"];
-    PheGeVC = jFile["Calibrations"]["SiPM"]["PhetoGeVC"];
-}
-
-struct PMTCalibration{
-    std::array<double,8> PMTSpd, PMTSpk, PMTCpd, PMTCpk;
-    PMTCalibration(const std::string&);
+class PMTCalibration
+{
+public:
+  std::map<std::string,float> PMTped, PMTpk;
+  PMTCalibration(const std::string&);
+  json jFile;
+  bool read();
 };
 
 PMTCalibration::PMTCalibration(const std::string& fname){
     std::ifstream inFile(fname,std::ifstream::in);
-    json jFile;
     inFile >> jFile;
-    PMTSpd = jFile["Calibrations"]["PMT"]["PMTS_pd"];
-    PMTSpk = jFile["Calibrations"]["PMT"]["PMTS_pk"];
-    PMTCpd = jFile["Calibrations"]["PMT"]["PMTC_pd"];
-    PMTCpk = jFile["Calibrations"]["PMT"]["PMTC_pk"];
+}
+
+bool PMTCalibration::read()
+{
+  for (auto j = jFile["Calibrations"]["PMT"].begin(); j != jFile["Calibrations"]["PMT"].end(); ++j){
+    std::string key = j.key();
+    const std::string s_peak = jFile["Calibrations"]["PMT"][key]["peak"];
+    const std::string s_ped = jFile["Calibrations"]["PMT"][key]["ped"];
+    try{
+      PMTped[key] =  std::stof(s_ped);
+    } catch (const std::invalid_argument& e){
+      std::cerr << "Error: cannot convert string " << e.what() << " in a float. Check the calibration json file." << std::endl;
+      PMTped[key] = 0;
+      return false;
+    } catch (const std::out_of_range& e){
+      std::cerr << "Error: the value " << e.what() << " is out of range for  a float. Check the calibration json file." << std::endl;
+      PMTped[key] = 0;
+      return false;
+    }
+
+    try{
+      PMTpk[key] =  std::stof(s_peak);
+    } catch (const std::invalid_argument& e){
+      std::cerr << "Error: cannot convert string " << e.what() << " in a float. Check the calibration json file." << std::endl;
+      PMTpk[key] = 0;
+      return false;
+    } catch (const std::out_of_range& e){
+      std::cerr << "Error: the value " << e.what() << " is out of range for  a float. Check the calibration json file." << std::endl;
+      PMTpk[key] = 0;
+      return false;
+    }
+  }
+  return true;
 }
 
 struct DWCCalibration{
@@ -76,54 +97,6 @@ DWCCalibration::DWCCalibration(const std::string& fname){
     DWC_z = jFile["Calibrations"]["DWC"]["DWC_z"];
 }
 
-/**
- * 
- */
-class EventOut{
-    public:
-	    EventOut(){};
-	    ~EventOut(){};
-	    uint32_t EventID;
-	    Long64_t TriggerMask;
-
-        float SPMT1, SPMT2, SPMT3, SPMT4, SPMT5, SPMT6, SPMT7, SPMT8;
-        float CPMT1, CPMT2, CPMT3, CPMT4, CPMT5, CPMT6, CPMT7, CPMT8;
-        float SPMT1_adc, SPMT2_adc, SPMT3_adc, SPMT4_adc, SPMT5_adc, SPMT6_adc, SPMT7_adc, SPMT8_adc;
-        float CPMT1_adc, CPMT2_adc, CPMT3_adc, CPMT4_adc, CPMT5_adc, CPMT6_adc, CPMT7_adc, CPMT8_adc;
-        float SiPMPheC[160] = {0};
-        float SiPMPheS[160] = {0};
-	float totSiPMCene = 0.;
-	float totSiPMSene = 0.;
-	int NSiPMZero= 0.;
-	float SPMTenergy = 0.;
-	float CPMTenergy = 0.;
-	float XDWC1,XDWC2,YDWC1,YDWC2;
-	int PShower, MCounter, C1, C2, C3;
-	float PShower_ped, MCounter_ped, C1_ped, C2_ped, C3_ped;
-	
-        void CompSPMTene(){SPMTenergy = SPMT1+SPMT2+SPMT3+SPMT4+SPMT5+SPMT6+SPMT7+SPMT8;}
-        void CompCPMTene(){CPMTenergy = CPMT1+CPMT2+CPMT3+CPMT4+CPMT5+CPMT6+CPMT7+CPMT8;}
-        
-        int SiPMCol(int index){ return index%16; }
-        int SiPMRow(int index){ return index/16; }
-        
-        pair<double, double> SiPMSpos(int index){
-	  int row = index / 16;
-	  int column = index%16;
-	  double x = (column-7)*2-1.5;
-	  double y = 2.*sq3*(4-row)+sq3/2;
-	  return pair<double,double>(x,y);
-        }
-        pair<double, double> SiPMCpos(int index){
-	  int row = index / 16;
-	  int column = index%16;
-	  double x = (column-7)*2-0.5;
-	  double y = 2.*sq3*(4-row)+1.5*sq3;
-	  return pair<double,double>(x,y);
-        }
-};
-
-
 class Event{
  public:
   //Constructor and de-constructor
@@ -131,49 +104,62 @@ class Event{
   Event();
   ~Event(){};
   
-  //Data members
-  //
-  int SPMT1, SPMT2, SPMT3, SPMT4, SPMT5, SPMT6, SPMT7, SPMT8;
-  int CPMT1, CPMT2, CPMT3, CPMT4, CPMT5, CPMT6, CPMT7, CPMT8;
+  unsigned int run_number;
+
+     // Declaration of leaf types
+   Int_t           EventNumber;
+   Int_t           EventSpill;
+   Long64_t        EventTime;
+   Int_t           NumOfPhysEv;
+   Int_t           NumOfPedeEv;
+   Int_t           NumOfSpilEv;
+   Long64_t        TriggerMask;
+   Int_t           ADCs[224];
+   Int_t           TDCsval[48];
+   Int_t           TDCscheck[48];
+
+
+
+
   int DWC1L, DWC1R, DWC1U, DWC1D, DWC2L, DWC2R, DWC2U, DWC2D;
+  int TDC_TC00, TDC_TS00, TDC_TC11, TDC_TS11, TDC_TC15, TDC_TS15;
   
-  UShort_t SiPMHighGain[320]; // Read HG board info from root file
-  UShort_t SiPMLowGain[320]; // Read LG board info from root file
-  
-  void calibrate(const SiPMCalibration&, EventOut*);
-  void calibratePMT(const PMTCalibration&, EventOut*, Long64_t entry = -1);
-  void calibrateDWC(const DWCCalibration&, EventOut*);
-  double getPedestalCher(unsigned int PMTnum, Long64_t entry);
-  double getPedestalScin(unsigned int PMTnum, Long64_t entry);
+  std::map<std::string,TProfile *> m_h_ped_chan;
+
+  void reset();
+  void copyValues(EventOut *);
+  void calibratePMT(PMTCalibration&, EventOut*, Long64_t entry = -1);
+  void calibrateDWC(DWCCalibration&, EventOut*);
+  void calibrateTDC(DWCCalibration&, EventOut*);
   Float_t getPedestal(TProfile * h_ped, Long64_t entry);
+  Float_t getPedestalChan(std::string channelName, Long64_t entry);
+  bool setRunNumber(const std::string run);
   
-  std::vector<TProfile *> * m_h_ped_scin;
-  std::vector<TProfile *> * m_h_ped_cher;
 };
 
 Event::Event():
-m_h_ped_scin(0),
-  m_h_ped_cher(0)
+  run_number(0)
 {}
 
-
-double Event::getPedestalCher(unsigned int PMTnum, Long64_t entry)
+void Event::reset()
 {
-  if (PMTnum - 1 < 0){
-    std::cerr << "ERROR! PMTnum cannot be 0. You are expected to count the PMTs from 1 to 8" << std::endl;
-    abort();
-  }
-  return getPedestal(m_h_ped_cher->at(PMTnum-1), entry);
 }
 
-double Event::getPedestalScin(unsigned int PMTnum, Long64_t entry)
+bool Event::setRunNumber(const std::string run)
 {
-  if (PMTnum - 1 < 0){
-    std::cerr << "ERROR! PMTnum cannot be 0. You are expected to count the PMTs from 1 to 8" << std::endl;
-    abort();
-  }
-  return getPedestal(m_h_ped_scin->at(PMTnum-1), entry);
+  try {
+    run_number = std::stoi(run);  // Converts the string to an int
+  std:;cout << "Run number to be checked " << run_number << std::endl;
+  } catch (std::invalid_argument &e) {
+    std::cerr << "Event::setRunNumber: Cannot convert string to int " << e.what() << std::endl;
+    return false;
+  } catch (std::out_of_range &e) {
+    std::cerr << "Event::setRunNumber: run out of range " << e.what() << std::endl;
+    return false;
+  }  
+  return true;
 }
+
 
 Float_t Event::getPedestal(TProfile * h_ped, Long64_t entry)
 {
@@ -195,108 +181,209 @@ Float_t Event::getPedestal(TProfile * h_ped, Long64_t entry)
   return binContent;
 }
 
-void Event::calibrate(const SiPMCalibration& calibration, EventOut* evout){
-
-	//SiPM calibration
-	//
-	int ccount = 0;
-	int scount = 0;
-	int nmiss=0;
-	for(uint16_t i=0;i<320;++i){      
-		//  encode row and columns from i 
-		//  and zero output vectors
-		int column=i%16;
-		int row=i/16;
-		int ind=(row/2)*16+column;
-		if(row % 2 == 0)evout->SiPMPheC[ind]=0;
-		if(row % 2 == 1)evout->SiPMPheS[ind]=0;
-		// Count cells where Sipm is zero
-		if (SiPMHighGain[i] <= 0) nmiss++;
-		// If SiPM is 0 do not subtract pede and leave 0! (board was not triggered)
-		//          cout << " Missing cell  " << i << endl;
-		if (SiPMHighGain[i] > 0){
-			double highGainPe = (SiPMHighGain[i] - calibration.highGainPedestal[i]) / calibration.highGainDpp[i];
-			double lowGainPe = (SiPMLowGain[i] - calibration.lowGainPedestal[i]) / calibration.lowGainDpp[i];
-			double SiPMPhe = highGainPe * (int)(highGainPe < 140.) + lowGainPe * (int)(highGainPe > 140.);
-			//std::cout<<"sipm "<<i<<" hg "<<SiPMHighGain[i]<<" lg "<<SiPMLowGain[i]<<" hgpe "<<highGainPe<<" lgpe "<<lowGainPe<<" phe "<<SiPMPhe<<" hgped "<<calibration.highGainPedestal[i]<<" hgdpp "<<calibration.highGainDpp[i]<<" lgped "<<calibration.lowGainPedestal[i]<<" hgdpp "<<calibration.lowGainDpp[i]<<std::endl;
-			// use HG if pe < 140 else use LG. Use bool casting to avoid if/else branching
-			if(row % 2 == 0){
-				// Cher
-				evout->SiPMPheC[ind] = SiPMPhe/calibration.PheGeVC[0];
-				evout->totSiPMCene += SiPMPhe/calibration.PheGeVC[0];
-                //if(ind != ccount && nmiss==0)
-                //cout << " ind " << ind << " ccount " << ccount << endl;
-				ccount++;
-			} else {
-				// Scin
-				evout->SiPMPheS[ind] = SiPMPhe/calibration.PheGeVS[0];
-				evout->totSiPMSene += SiPMPhe/calibration.PheGeVS[0];
-                //if(ind != scount && nmiss==0)
-                //cout << " ind " << ind << " scount " << scount << endl;
-				scount++;
-			}
-		}
-	}
-	evout->NSiPMZero=nmiss;
-}
-
-void Event::calibratePMT(const PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
-  
-  if (entry < 0){
-
-    //PMT calibration
-    
-    evout->SPMT1 = (SPMT1-pmtcalibration.PMTSpd[0])/(pmtcalibration.PMTSpk[0]);
-    evout->SPMT2 = (SPMT2-pmtcalibration.PMTSpd[1])/(pmtcalibration.PMTSpk[1]);
-    evout->SPMT3 = (SPMT3-pmtcalibration.PMTSpd[2])/(pmtcalibration.PMTSpk[2]);
-    evout->SPMT4 = (SPMT4-pmtcalibration.PMTSpd[3])/(pmtcalibration.PMTSpk[3]);
-    evout->SPMT5 = (SPMT5-pmtcalibration.PMTSpd[4])/(pmtcalibration.PMTSpk[4]);
-    evout->SPMT6 = (SPMT6-pmtcalibration.PMTSpd[5])/(pmtcalibration.PMTSpk[5]);
-    evout->SPMT7 = (SPMT7-pmtcalibration.PMTSpd[6])/(pmtcalibration.PMTSpk[6]);
-    evout->SPMT8 = (SPMT8-pmtcalibration.PMTSpd[7])/(pmtcalibration.PMTSpk[7]);
-    
-    evout->CPMT1 = (CPMT1-pmtcalibration.PMTCpd[0])/(pmtcalibration.PMTCpk[0]);
-    evout->CPMT2 = (CPMT2-pmtcalibration.PMTCpd[1])/(pmtcalibration.PMTCpk[1]);
-    evout->CPMT3 = (CPMT3-pmtcalibration.PMTCpd[2])/(pmtcalibration.PMTCpk[2]);
-    evout->CPMT4 = (CPMT4-pmtcalibration.PMTCpd[3])/(pmtcalibration.PMTCpk[3]);
-    evout->CPMT5 = (CPMT5-pmtcalibration.PMTCpd[4])/(pmtcalibration.PMTCpk[4]);
-    evout->CPMT6 = (CPMT6-pmtcalibration.PMTCpd[5])/(pmtcalibration.PMTCpk[5]);
-    evout->CPMT7 = (CPMT7-pmtcalibration.PMTCpd[6])/(pmtcalibration.PMTCpk[6]);
-    evout->CPMT8 = (CPMT8-pmtcalibration.PMTCpd[7])/(pmtcalibration.PMTCpk[7]);
+Float_t Event::getPedestalChan(std::string channelName, Long64_t entry)
+{
+  TProfile * h = 0;
+  if (m_h_ped_chan.find(channelName) != m_h_ped_chan.end()){
+    h = m_h_ped_chan[channelName];
+    return this->getPedestal(h,entry);
   } else {
-    if (m_h_ped_scin != 0 && m_h_ped_cher != 0){
-
-      evout->SPMT1 = (SPMT1-getPedestalScin(1,entry))/(pmtcalibration.PMTSpk[0]);
-      evout->SPMT2 = (SPMT2-getPedestalScin(2,entry))/(pmtcalibration.PMTSpk[1]);
-      evout->SPMT3 = (SPMT3-getPedestalScin(3,entry))/(pmtcalibration.PMTSpk[2]);
-      evout->SPMT4 = (SPMT4-getPedestalScin(4,entry))/(pmtcalibration.PMTSpk[3]);
-      evout->SPMT5 = (SPMT5-getPedestalScin(5,entry))/(pmtcalibration.PMTSpk[4]);
-      evout->SPMT6 = (SPMT6-getPedestalScin(6,entry))/(pmtcalibration.PMTSpk[5]);
-      evout->SPMT7 = (SPMT7-getPedestalScin(7,entry))/(pmtcalibration.PMTSpk[6]);
-      evout->SPMT8 = (SPMT8-getPedestalScin(8,entry))/(pmtcalibration.PMTSpk[7]);
-      
-      evout->CPMT1 = (CPMT1-getPedestalCher(1,entry))/(pmtcalibration.PMTCpk[0]);
-      evout->CPMT2 = (CPMT2-getPedestalCher(2,entry))/(pmtcalibration.PMTCpk[1]);
-      evout->CPMT3 = (CPMT3-getPedestalCher(3,entry))/(pmtcalibration.PMTCpk[2]);
-      evout->CPMT4 = (CPMT4-getPedestalCher(4,entry))/(pmtcalibration.PMTCpk[3]);
-      evout->CPMT5 = (CPMT5-getPedestalCher(5,entry))/(pmtcalibration.PMTCpk[4]);
-      evout->CPMT6 = (CPMT6-getPedestalCher(6,entry))/(pmtcalibration.PMTCpk[5]);
-      evout->CPMT7 = (CPMT7-getPedestalCher(7,entry))/(pmtcalibration.PMTCpk[6]);
-      evout->CPMT8 = (CPMT8-getPedestalCher(8,entry))/(pmtcalibration.PMTCpk[7]);
-      
-    } else { 
-      std::cerr << "ERROR: 'entry' is positive, but the pedestal histograms are empty!!!!" << std::endl;
-      std::cerr << "Refusing to do PMT calibration" << std::endl;
-    }
+    std::cerr << "Event::getPedestalChan : cannot find channel with name " << channelName << std::endl;
+    return 0;
   }
 }
 
-void Event::calibrateDWC(const DWCCalibration& dwccalibration, EventOut* evout){
-    evout->XDWC1 = (DWC1R-DWC1L)*dwccalibration.DWC_sl[0]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[0]+dwccalibration.DWC_cent[0];
-    evout->YDWC1 = (DWC1D-DWC1U)*dwccalibration.DWC_sl[1]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[1]+dwccalibration.DWC_cent[1];
-    evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2]+dwccalibration.DWC_cent[2];
-    evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
+void Event::copyValues(EventOut * evout)
+{
+			        
 }
+
+void Event::calibratePMT(PMTCalibration& pmtcalibration, EventOut* evout, Long64_t entry){
+
+  static float adcToPhysS = 20./1.2617; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
+
+  static float adcToPhysC = 20./1.3396; // Second attempt to bring the calorimeter to the electromagnetic scale. Number obtained using second equalisation cycle (20 GeV electrons) shooting 20 GeV electrons in the central tower, and looking at the (pedestal subtracted) sum of R0, R1, R2 in the calo. 1.2617 is the peak position (in this scale, the peak in tower 0 should be at 1. So, something of the order of 77% containment
+
+
+  /* These numbers are used to take into account the change in HV in tower 0 in some runs*/
+  static float correctT00_S = -1.;
+  static float correctT00_C = -1.;  
+
+  if (correctT00_S < 0){ // check that we haven't yet tested whether this run should be corrected or not
+    correctT00_S = 1.;
+    correctT00_C = 1.;
+    std::vector<unsigned int> runs_tobecorrected = {766,767,772,774,775,776,777,778,779,780,781,782,783,784,786,792,793,794,796,797,793,794,797,960,962,963,965,
+      966,967,968,972,1000,1019,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1013,1014,1034,1044,1045,1046,1048,1049,1050,1051,1052,982,983,988,989,990,991,992};
+    for (unsigned int run_tc : runs_tobecorrected){
+      if (run_number == run_tc){
+	correctT00_S = 15.37/5.75; // Ratio of the peak position in run 746 and in run 766 (766 before applying this calibration
+	correctT00_C = 14.9/2.88; // Ratio of the peak position in run 746 and in run 766 (766 before applying this calibration
+	std::cout << "This run was taken with the new HV. The response in T00 will be rescaled" << std::endl;
+	std::cout << "TS00 response will be multiplied by " << correctT00_S << std::endl;
+	std::cout << "TC00 response will be multiplied by " << correctT00_C << std::endl;
+      }
+    }
+  }
+    
+  
+  if (entry < 0){ // Then use the pedestals and peaks from file
+    for (auto it = this->channel.begin(); it != this->channel.end(); ++it){
+      std::string key = it->first;
+      
+      // check if the key is available in the PMTcalibration map. If it isn't, this is an ancillary. Skip for the moment 
+      
+      if (pmtcalibration.PMTped.find(key) != pmtcalibration.PMTped.end()) 
+	{
+	  static float adcToPhys;
+	  if (key.find("TS") != std::string::npos){
+	    adcToPhys = adcToPhysS;
+	  } else if (key.find("TC") != std::string::npos){
+	    adcToPhys = adcToPhysC;
+	  }
+	  if (key == "TS00"){ // to deal with the changes in HV
+	    this->channel_calibrated[key] = adcToPhys*correctT00_S*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  } else if (key == "TC00"){
+	    this->channel_calibrated[key] = adcToPhys*correctT00_C*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  } else {
+	    this->channel_calibrated[key] = adcToPhys*((float(this->channel[key])) - pmtcalibration.PMTped[key])/(pmtcalibration.PMTpk[key] - pmtcalibration.PMTped[key]);
+	  }
+	}
+    }
+
+  } else {
+    
+    for (auto it = this->channel.begin(); it != this->channel.end(); ++it){
+      std::string key = it->first;
+      this->channel_calibrated[key] = float(this->channel[key]) - this->getPedestalChan(key,entry);
+    }
+  
+    evout->L02_ped = this->getPedestalChan("L02",entry);
+    evout->L03_ped = this->getPedestalChan("L03",entry);
+    evout->L04_ped = this->getPedestalChan("L04",entry);
+    evout->L05_ped = this->getPedestalChan("L05",entry);
+    evout->L07_ped = this->getPedestalChan("L07",entry);
+    evout->L08_ped = this->getPedestalChan("L08",entry);
+    evout->L09_ped = this->getPedestalChan("L09",entry);
+    evout->L10_ped = this->getPedestalChan("L10",entry);
+    evout->L11_ped = this->getPedestalChan("L11",entry);
+    evout->L12_ped = this->getPedestalChan("L12",entry);
+    evout->L13_ped = this->getPedestalChan("L13",entry);
+    evout->L14_ped = this->getPedestalChan("L14",entry);
+    evout->L15_ped = this->getPedestalChan("L15",entry);
+    evout->L16_ped = this->getPedestalChan("L16",entry);
+    evout->L20_ped = this->getPedestalChan("L20",entry);
+    
+    evout->PShower_ped = this->getPedestalChan("PreSh",entry);
+    evout->MCounter_ped = this->getPedestalChan("MuonT",entry);
+    evout->TailC_ped = this->getPedestalChan("TailC",entry);
+    evout->C1_ped = this->getPedestalChan("Cher1",entry);
+    evout->C2_ped = this->getPedestalChan("Cher2",entry);
+    evout->C3_ped = this->getPedestalChan("Cher3",entry);
+    
+  }
+  
+  evout->TS55 = this->channel_calibrated["TS55"];
+  evout->TS54 = this->channel_calibrated["TS54"];
+  evout->TS53 = this->channel_calibrated["TS53"];
+  evout->TS45 = this->channel_calibrated["TS45"];
+  evout->TS44 = this->channel_calibrated["TS44"];
+  evout->TS43 = this->channel_calibrated["TS43"];
+  evout->TS35 = this->channel_calibrated["TS35"];
+  evout->TS34 = this->channel_calibrated["TS34"];
+  evout->TS33 = this->channel_calibrated["TS33"];
+  evout->TS25 = this->channel_calibrated["TS25"];
+  evout->TS24 = this->channel_calibrated["TS24"];
+  evout->TS23 = this->channel_calibrated["TS23"];
+  evout->TS16 = this->channel_calibrated["TS16"];
+  evout->TS15 = this->channel_calibrated["TS15"];
+  evout->TS14 = this->channel_calibrated["TS14"];
+  evout->TS17 = this->channel_calibrated["TS17"];
+  evout->TS00 = this->channel_calibrated["TS00"];
+  evout->TS13 = this->channel_calibrated["TS13"];
+  evout->TS10 = this->channel_calibrated["TS10"];
+  evout->TS11 = this->channel_calibrated["TS11"];
+  evout->TS12 = this->channel_calibrated["TS12"];
+  evout->TS20 = this->channel_calibrated["TS20"];
+  evout->TS21 = this->channel_calibrated["TS21"];
+  evout->TS22 = this->channel_calibrated["TS22"];
+  evout->TS30 = this->channel_calibrated["TS30"];
+  evout->TS31 = this->channel_calibrated["TS31"];
+  evout->TS32 = this->channel_calibrated["TS32"];
+  evout->TS40 = this->channel_calibrated["TS40"];
+  evout->TS41 = this->channel_calibrated["TS41"];
+  evout->TS42 = this->channel_calibrated["TS42"];
+  evout->TS50 = this->channel_calibrated["TS50"];
+  evout->TS51 = this->channel_calibrated["TS51"];
+  evout->TS52 = this->channel_calibrated["TS52"];
+  evout->TS60 = this->channel_calibrated["TS60"];
+  evout->TS61 = this->channel_calibrated["TS61"];
+  evout->TS62 = this->channel_calibrated["TS62"];
+  
+  evout->TC55 = this->channel_calibrated["TC55"];
+  evout->TC54 = this->channel_calibrated["TC54"];
+  evout->TC53 = this->channel_calibrated["TC53"];
+  evout->TC45 = this->channel_calibrated["TC45"];
+  evout->TC44 = this->channel_calibrated["TC44"];
+  evout->TC43 = this->channel_calibrated["TC43"];
+  evout->TC35 = this->channel_calibrated["TC35"];
+  evout->TC34 = this->channel_calibrated["TC34"];
+  evout->TC33 = this->channel_calibrated["TC33"];
+  evout->TC25 = this->channel_calibrated["TC25"];
+  evout->TC24 = this->channel_calibrated["TC24"];
+  evout->TC23 = this->channel_calibrated["TC23"];
+  evout->TC16 = this->channel_calibrated["TC16"];
+  evout->TC15 = this->channel_calibrated["TC15"];
+  evout->TC14 = this->channel_calibrated["TC14"];
+  evout->TC17 = this->channel_calibrated["TC17"];
+  evout->TC00 = this->channel_calibrated["TC00"];
+  evout->TC13 = this->channel_calibrated["TC13"];
+  evout->TC10 = this->channel_calibrated["TC10"];
+  evout->TC11 = this->channel_calibrated["TC11"];
+  evout->TC12 = this->channel_calibrated["TC12"];
+  evout->TC20 = this->channel_calibrated["TC20"];
+  evout->TC21 = this->channel_calibrated["TC21"];
+  evout->TC22 = this->channel_calibrated["TC22"];
+  evout->TC30 = this->channel_calibrated["TC30"];
+  evout->TC31 = this->channel_calibrated["TC31"];
+  evout->TC32 = this->channel_calibrated["TC32"];
+  evout->TC40 = this->channel_calibrated["TC40"];
+  evout->TC41 = this->channel_calibrated["TC41"];
+  evout->TC42 = this->channel_calibrated["TC42"];
+  evout->TC50 = this->channel_calibrated["TC50"];
+  evout->TC51 = this->channel_calibrated["TC51"];
+  evout->TC52 = this->channel_calibrated["TC52"];
+  evout->TC60 = this->channel_calibrated["TC60"];
+  evout->TC61 = this->channel_calibrated["TC61"];
+  evout->TC62 = this->channel_calibrated["TC62"];  
+}
+
+void Event::calibrateDWC(DWCCalibration& dwccalibration, EventOut* evout){
+  if (DWC1R != -1 && DWC1L != -1)
+    evout->XDWC1 = (DWC1R-DWC1L)*dwccalibration.DWC_sl[0]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[0]+dwccalibration.DWC_cent[0];
+  else evout->XDWC1 = -1.;
+  if (DWC1D != -1 && DWC1U != -1)
+    evout->YDWC1 = (DWC1D-DWC1U)*dwccalibration.DWC_sl[1]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[1]+dwccalibration.DWC_cent[1];
+  else evout->YDWC1 = -1.;
+  if (DWC2R != -1 && DWC2L != -1)
+    evout->XDWC2 = (DWC2R-DWC2L)*dwccalibration.DWC_sl[2]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[2]+dwccalibration.DWC_cent[2];
+  else evout->XDWC2 = -1.;
+  if (DWC2D != -1 && DWC2U != -1)
+    evout->YDWC2 = (DWC2D-DWC2U)*dwccalibration.DWC_sl[3]*dwccalibration.DWC_tons[0]+dwccalibration.DWC_offs[3]+dwccalibration.DWC_cent[3];
+  else evout->YDWC2 = -1.;
+}
+
+void Event::calibrateTDC(DWCCalibration& dwccalibration, EventOut* evout){
+  evout->TDC_TC00 = TDC_TC00;
+  evout->TDC_TS00 = TDC_TS00;
+  evout->TDC_TC11 = TDC_TC11;
+  evout->TDC_TS11 = TDC_TS11;
+  evout->TDC_TC15 = TDC_TC15;
+  evout->TDC_TS15 = TDC_TS15;
+}
+
+/*void Event::calibratePMT_TDC(DWCCalibration& dwccalibration, EventOut* evout){
+  evout->TDC_S00 = TDC_S00  * PMT_TDC_calibration.TDC_tons[0];
+  }*/
 
 
 
