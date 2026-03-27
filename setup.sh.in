@@ -1,0 +1,40 @@
+#! /bin/bash
+
+export IDEADIR="@IDEADIR@"
+export SamplePath="@SamplePath@"
+export IDEARepo="@IDEARepo@"
+export TBVER="@TBVER@"
+
+
+printf "\n\n Configuring TBDataDataPreparation for test beam "${TBVER}" from repository "${IDEARepo}".\n\n"
+
+LCGSetupFile=/cvmfs/sft.cern.ch/lcg/views/LCG_108/x86_64-el9-gcc15-opt/setup.sh
+
+echo "Trying to use LCG from "${LCGSetupFile}
+
+if [ -f ${LCGSetupFile} ]
+then
+    source ${LCGSetupFile}
+    echo "Success. Package configured to work with LCG"
+else
+    echo "LCGs cannot be found at "${LCGSetupFile}". Trying to run without them.\n"
+fi
+
+export LD_LIBRARY_PATH="@LD_LIBRARY_PATH_SETUP@:${LD_LIBRARY_PATH}"
+export PATH="@PATH_SETUP@:${PATH}"
+export PYTHONPATH="@PYTHONPATH_SETUP@:${PYTHONPATH}"
+export BATCHPATH="@BATCHPATH_SETUP@"
+
+if [ ! -d ${IDEARepo}/${TBVER} ]
+then
+    echo "TBVER "${TBVER}" does not exist"
+    exit 1
+fi
+
+echo "All done. See README file in "${IDEARepo}" for instructions." 
+
+
+
+
+
+
