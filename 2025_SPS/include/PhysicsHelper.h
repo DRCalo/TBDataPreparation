@@ -43,7 +43,7 @@ public:
   Float_t GetADCPedLG(unsigned int idx) {return m_ADCPedLG[idx];}
   Float_t GetHGfromLG_q(unsigned int idx) {return m_HGfromLG_q[idx];}
   Float_t GetHGfromLG_m(unsigned int idx) {return m_HGfromLG_m[idx];}
-  Float_t FillADCtoGeV(unsigned int idx) {return m_ADCtoGeV[idx];}
+  Float_t GetADCtoGeV(unsigned int idx) {return m_ADCtoGeV[idx];}
 private:
   Float_t m_ADCPedHG[N_PHELP_SIPM];                                                                                                                                                                    
   Float_t m_ADCPedLG[N_PHELP_SIPM];                                                                                                                                                                    
@@ -73,7 +73,7 @@ class PhysicsHelper
 
   bool CalibratePMTAux();
   bool CalibrateDWC();
-  bool CalibrateSiPMS();
+  bool CalibrateSiPMs();
 
   PMTAuxCalibration * GetPMTAuxCalibration() {return &m_pmtcal;}
   DWCCalibration * GetDWCCalibration(){return &m_dwccal;}
@@ -93,6 +93,8 @@ class PhysicsHelper
   Long64_t        m_triggerMask;
   Int_t           m_TDCsval[48];
   Int_t           m_ADCs[N_PHELP_ADC];
+
+  Double_t        m_BoardTimeStamps[16];
   Short_t         m_SiPM_HG[N_PHELP_SIPM];
   Short_t         m_SiPM_LG[N_PHELP_SIPM];
 

@@ -212,25 +212,30 @@ def main():
 
         SiPMCal = physHelp.GetSiPMCalibration()
         # loop over json entries
+        print ("Loading SiPM pedestals")
         for k_str, entry in SiPMPedestalData.items():
             idx = int(k_str)   # convert key to int
             ped_HG = entry["median_HG"]
             ped_LG = entry["median_LG"]
+            #print(str(idx) + ' ' + str(ped_HG) + ' ' + str(ped_LG))
             SiPMCal.FillADCPedHG(idx,ped_HG)
             SiPMCal.FillADCPedLG(idx,ped_HG)
+        print("Loading HGfromLG factors")
         for k_str, entry in SiPMHGfromLGData.items():
             idx = int(k_str)   # convert key to int
             m = entry["m"]
-            q = entry["m"]
+            q = entry["q"]
+            #print(str(idx) + ' ' + str(m) + ' ' + str(q))    
             SiPMCal.FillHGfromLG_m(idx,m)
             SiPMCal.FillHGfromLG_q(idx,q)
-        for k_str, entry in SiPMADCtoGeVData.items():
-            idx = int(k_str)   # convert key to int
+        print ("Loading SiPM ADCtoGeV factors")
+        for idx, entry in enumerate(SiPMADCtoGeVData):
+            #print(str(idx) + ' ' + str(entry))    
             SiPMCal.FillADCtoGeV(idx,entry)
 
 
 
-        PMTCal.Print()
+        #PMTCal.Print()
         physHelp.Loop()
 
         outtree_PMT.Write()

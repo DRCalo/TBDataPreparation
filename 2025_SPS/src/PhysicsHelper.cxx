@@ -96,6 +96,14 @@ bool PhysicsHelper::PrepareForRun()
   m_PMTTree->SetBranchAddress("TriggerMask", &m_triggerMask);
   m_PMTTree->SetBranchAddress("TDCsval", m_TDCsval);
   m_PMTTree->SetBranchAddress("ADCs", m_ADCs);
+
+
+  m_SiPMTree->SetBranchAddress("BoardTimeStamps", m_BoardTimeStamps);
+  m_SiPMTree->SetBranchAddress("SiPM_HG", m_SiPM_HG);
+  m_SiPMTree->SetBranchAddress("SiPM_LG", m_SiPM_LG);
+
+
+  
   tmp_str = "PMT[";
   tmp_str += N_PHELP_PMT;
   tmp_str += "]/F";
@@ -191,7 +199,6 @@ bool PhysicsHelper::DeterminePMTAuxPedestals(unsigned int l_option)
     for (unsigned int ch = 0; ch < N_PHELP_ADC; ++ch){
       std::nth_element(l_ped[ch].begin(), l_ped[ch].begin() + l_ped[ch].size()/2, l_ped[ch].end());
       m_ADCs_ped[ch] = Float_t(l_ped[ch][l_ped[ch].size()/2]);
-      std::cout << "Channel " << ch << " pedestal " << m_ADCs_ped[ch] << std::endl;
       PMTCaloMapping::HWLoc l_hwloc(ch);
       if (l_hwloc.is_valid(ch)){ // The channel actually corresponds to something
 	if (PMTCaloMapping::getIdxFromHWLoc(l_hwloc, m_runnumber) != 192){ // This something is a PMT
@@ -267,8 +274,35 @@ bool PhysicsHelper::CalibrateDWC()
   return true;
 }
 
-bool PhysicsHelper::CalibrateSiPMS()
-{return true;}
+bool PhysicsHelper::CalibrateSiPMs()
+{
+  int boardID = -1;
+
+  //std::cout << "----------------------------" << std::endl;
+  //std::cout << "Event number " << m_eventNumber << std::endl;
+  
+  for (unsigned int ch = 0; ch < N_PHELP_SIPM; ++ch)
+    {
+
+      boardID = ch/64;
+      //      std::cout << "Channel " << ch << " boardID " << boardID << " timeStamp " << m_BoardTimeStamps[boardID] << std::endl;
+      if (m_BoardTimeStamps[boardID] <=0){ // The board is not written, skip
+	m_SiPM[ch] = 0.;
+      } else{
+	if (m_SiPM_HG[ch] > 3800){
+	  // compute HGfromLG
+	  m_SiPM[ch] = m_sipmcal.GetHGfromLG_m(ch) * (float(m_SiPM_LG[ch]) - float(m_sipmcal.GetADCPedLG(ch))) + m_sipmcal.GetHGfromLG_q(ch);
+	} else {
+	  m_SiPM[ch] = float(m_SiPM_HG[ch]) - m_sipmcal.GetADCPedHG(ch);
+	}
+	// Now rescale for the relevant ADCtoGeV factor
+	//std::cout << m_sipmcal.GetADCtoGeV(ch) << std::endl;
+	m_SiPM[ch] = m_sipmcal.GetADCtoGeV(ch) * float(m_SiPM[ch]);
+      }
+    }
+  
+  return true;
+}
 
 void PhysicsHelper::Loop()
 {
@@ -277,7 +311,7 @@ void PhysicsHelper::Loop()
     if (ev % 1000 == 0) std::cout << ev << " events processed" << std::endl;
     m_PMTTree->GetEntry(ev);
     m_SiPMTree->GetEntry(ev);
-    if (!CalibratePMTAux() || !CalibrateDWC() || !CalibrateSiPMS()){
+    if (!CalibratePMTAux() || !CalibrateDWC() || !CalibrateSiPMs()){
       std::cout << "Event " << m_eventNumber << ": problems in running calibration, exitiing the loop." << std::endl;
       break;
     }
