@@ -8,6 +8,11 @@ import ROOT
 import json 
 
 
+def fill_array(arr, values):
+    for i, v in enumerate(values):
+        arr[i] = v
+
+
 def returnRunNumber(x: str) -> str:
     """ getRunNumber from the input name. May need modification in the 2023 beam test.
 
@@ -25,7 +30,7 @@ def returnRunNumber(x: str) -> str:
 
 def main():
     if not "IDEARepo" in os.environ:
-        print('Environment not defined. Please define teh environment for the TBDataPreparation package')
+        print('Environment not defined. Please define the environment for the TBDataPreparation package')
         return
     
     """IT MAY NOT BE A GOOD IDEA SINCE THE OUTPUT NAME IS DEFINED IN PhysicsConverter.C script.
@@ -40,8 +45,18 @@ def main():
                         default=False,
                         help='Print more information')
     parser.add_argument('--PMTCalFile', action='store',dest='PMTCalFile',
-                        default=os.getenv('IDEARepo') + '/2025_SPS/calibration/PMT_calibration_v1.json',
+                        default=os.getenv('IDEARepo') + '/2025_SPS/MapAndCalibration/PMT_calibration_v1.json',
                         help='Specifies which calibration file is to be used for PMTs')
+    parser.add_argument('--SiPMPedFile', action='store',dest='SiPMPedFile',
+                        default=os.getenv('IDEARepo') + '/2025_SPS/MapAndCalibration/SiPM_pedestals_v1.json',
+                        help='SiPM pedestal file')
+    parser.add_argument('--SiPMHGfromLGFile', action='store',dest='SiPMHGfromLGFile',
+                        default=os.getenv('IDEARepo') + '/2025_SPS/MapAndCalibration/SiPM_HGfromLG_v1.json',
+                        help='SiPM constants for computing the "HGfromLG" quantity')
+    parser.add_argument('--SiPMADCtoGeVFile', action='store',dest='SiPMADCtoGeVFile',
+                        default=os.getenv('IDEARepo') + '/2025_SPS/MapAndCalibration/SiPM_ADCtoGeV_v1.json',
+                        help='SiPM constant for computing the SiPM energy in GeV from the unified ADC signal')
+    
     parser.add_argument('--doCalibration', action='store_true', dest='doCalibration', 
                         default=True,
                         help='If specified, do calibration using pedestals from the json calibration file')
@@ -54,9 +69,9 @@ def main():
     parser.add_argument('-i','--input_dir', action='store', dest='rawdatapath',
                         default='/eos/user/i/ideadr/TB2025_H8/mergedNtuples/',
                         help='input root file path.')
-    parser.add_argument('-c','--calibra_file', action='store', dest='calibrationfile',
-                        default='/afs/cern.ch/user/i/ideadr/TB2025/run/RunXXX.json',
-                        help='calibration file.')
+    parser.add_argument('-c','--dwc_cal', action='store', dest='dwccalibrationfile',
+                        default=os.getenv('IDEARepo') + '/2025_SPS/MapAndCalibration/RunXXX.json',
+                        help='DWC calibration file.')
     parser.add_argument('-r','--run_number', action='store', dest='runNumber',
                         default='-1000',
                         help='If different from -1000, causes the script to run only on the indicated run number.')
@@ -82,7 +97,38 @@ def main():
         with open(par.PMTCalFile) as f:
             PMTCalibrationData = json.load(f)
     else:
-        print('\n\nThe PMT calibration file ' + par.PMTCalFile + ' does not exist. No calibration will be applied to pmts\n\n') 
+        print('\n\nThe PMT calibration file ' + par.PMTCalFile + ' does not exist. Exiting.\n\n')
+        return -1
+
+    DWCCalibrationData = None
+    
+    if os.path.isfile(par.dwccalibrationfile):
+        with open(par.dwccalibrationfile) as f:
+            DWCCalibrationData = json.load(f)
+    else:
+        print('\n\nThe DWC calibration file ' + par.dwccalibrationfile + ' does not exist. No calibration will be applied to dwc - the result will not be usable.s\n\n')
+        
+    SiPMPedestalData = None
+    SiPMHGfromLGData = None
+    SiPMADCtoGeVData = None
+
+    try:
+        with open(par.SiPMHGfromLGFile) as f:
+            SiPMHGfromLGData = json.load(f)
+        with open(par.SiPMPedFile) as g:
+            SiPMPedestalData = json.load(g)
+        with open(par.SiPMADCtoGeVFile) as h:
+            SiPMADCtoGeVData = json.load(h)
+    except:
+        print('\n\nProblem loading the SiPM calibration files.\n\n')
+        return -1
+        
+    
+    if os.path.isfile(par.dwccalibrationfile):
+        with open(par.dwccalibrationfile) as f:
+            DWCCalibrationData = json.load(f)
+    else:
+        print('\n\nThe DWC calibration file ' + par.dwccalibrationfile + ' does not exist. No calibration will be applied to dwc - the result will not be usable.s\n\n')
 
     #One needs to make assumptions here on the format of the filename. Not the best.....
 
@@ -106,7 +152,6 @@ def main():
     else:
         mrgfls = [par.runNumber]
 
-    calFile=par.calibrationfile
     macroPath = os.getenv('IDEARepo') + "/2025_SPS/scripts/"
 
     ROOT.gInterpreter.AddIncludePath("./")
@@ -115,7 +160,8 @@ def main():
     
     #print(macroPath)
     
-    ROOT.gROOT.LoadMacro(macroPath+"PhysicsHelper.cxx+")
+    #    ROOT.gROOT.LoadMacro(macroPath+"PhysicsHelper.cxx+")
+    ROOT.gSystem.Load("libPhysicsHelper")
 
     for fl in mrgfls:
         print("\n\nRunning on run " + str(fl) + '\n\n')
@@ -145,10 +191,44 @@ def main():
         if physHelp.DeterminePMTAuxPedestals() is False:
             print("\033[31mProblems computing the PMT and AUX detectors pedestals\033[0m")
 
+        # Get the necessary input values for the PMT calibration
+            
         PMTCal = physHelp.GetPMTAuxCalibration()
-        if PMTCalibrationData != None:
-            for idx, pmt_calvalue in enumerate(PMTCalibrationData):
-                PMTCal.FillADCtoGeV(idx,pmt_calvalue)
+        for idx, pmt_calvalue in enumerate(PMTCalibrationData):
+            PMTCal.FillADCtoGeV(idx,pmt_calvalue)
+
+        # Get the DWC calibration constants 
+
+        DWCCal = physHelp.GetDWCCalibration()
+        if DWCCalibrationData != None:
+            dwc = DWCCalibrationData["Calibrations"]["DWC"]
+            fill_array(DWCCal.DWC_sl,   dwc["DWC_sl"])
+            fill_array(DWCCal.DWC_offs, dwc["DWC_offs"])
+            fill_array(DWCCal.DWC_cent, dwc["DWC_cent"])
+            fill_array(DWCCal.DWC_z,    dwc["DWC_z"])
+            fill_array(DWCCal.DWC_tons, dwc["DWC_tons"])
+
+        # Loading the SiPM calibration constants and pedestals
+
+        SiPMCal = physHelp.GetSiPMCalibration()
+        # loop over json entries
+        for k_str, entry in SiPMPedestalData.items():
+            idx = int(k_str)   # convert key to int
+            ped_HG = entry["median_HG"]
+            ped_LG = entry["median_LG"]
+            SiPMCal.FillADCPedHG(idx,ped_HG)
+            SiPMCal.FillADCPedLG(idx,ped_HG)
+        for k_str, entry in SiPMHGfromLGData.items():
+            idx = int(k_str)   # convert key to int
+            m = entry["m"]
+            q = entry["m"]
+            SiPMCal.FillHGfromLG_m(idx,m)
+            SiPMCal.FillHGfromLG_q(idx,q)
+        for k_str, entry in SiPMADCtoGeVData.items():
+            idx = int(k_str)   # convert key to int
+            SiPMCal.FillADCtoGeV(idx,entry)
+
+
 
         PMTCal.Print()
         physHelp.Loop()

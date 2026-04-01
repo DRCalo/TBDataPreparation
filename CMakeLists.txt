@@ -129,6 +129,7 @@ set(TB_SCRIPTS
     DRrootify.py
     DR_createMergeFromSiPMOnly.py
     bzipPMTfiles.py
+    SiPMConvert.py
 )
 
 install(CODE "

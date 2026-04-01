@@ -65,6 +65,17 @@ Float_t PMTAuxCalibration::GetADCtoGeV(unsigned int idx)
   }
 }
 
+SiPMCalibration::SiPMCalibration()
+{
+  for (unsigned int i = 0; i < N_PHELP_SIPM; ++i){
+    m_ADCPedHG[i] = 0.;                                                                                                                                                                                                  
+    m_ADCPedLG[i] = 0.;                                                                                                                                                                                                  
+    m_HGfromLG_q[i] = 0.;                                                                                                                                                                                                
+    m_HGfromLG_m[i] = 1.;                                                                                                                                                                                                
+    m_ADCtoGeV[i] = 1.;
+  }
+}
+
 PhysicsHelper::PhysicsHelper(unsigned int runnumber, TTree * newtree, TTree * PMTTree, TTree * SiPMTree):
   m_runnumber(runnumber),
   m_newTree(newtree),
@@ -74,7 +85,8 @@ PhysicsHelper::PhysicsHelper(unsigned int runnumber, TTree * newtree, TTree * PM
 }
 
 PhysicsHelper::~PhysicsHelper()
-{}
+{
+}
 
 bool PhysicsHelper::PrepareForRun()
 {
@@ -273,12 +285,5 @@ void PhysicsHelper::Loop()
   }
 }
 
-  Float_t L02,L03,L04,L05;
-  Float_t L07,L08,L09,L10;
-
-  Float_t XDWC1,XDWC2,YDWC1,YDWC2;
-  Float_t Veto, PShower, MCounter, C1, C2, C3, TailC;
-
-  PMTAuxCalibration m_pmtcal;
 
 

@@ -29,6 +29,29 @@ private:
   Float_t m_ADCtoGeV[N_PHELP_PMT];
 };
 
+class SiPMCalibration
+{
+public:
+  SiPMCalibration();
+  ~SiPMCalibration(){};
+  void FillADCPedHG(unsigned int idx, Float_t val) {m_ADCPedHG[idx] = val;}
+  void FillADCPedLG(unsigned int idx, Float_t val) {m_ADCPedLG[idx] = val;}
+  void FillHGfromLG_q(unsigned int idx, Float_t val) {m_HGfromLG_q[idx] = val;}
+  void FillHGfromLG_m(unsigned int idx, Float_t val) {m_HGfromLG_m[idx] = val;}
+  void FillADCtoGeV(unsigned int idx, Float_t val) {m_ADCtoGeV[idx] = val;}
+  Float_t GetADCPedHG(unsigned int idx) {return m_ADCPedHG[idx];}
+  Float_t GetADCPedLG(unsigned int idx) {return m_ADCPedLG[idx];}
+  Float_t GetHGfromLG_q(unsigned int idx) {return m_HGfromLG_q[idx];}
+  Float_t GetHGfromLG_m(unsigned int idx) {return m_HGfromLG_m[idx];}
+  Float_t FillADCtoGeV(unsigned int idx) {return m_ADCtoGeV[idx];}
+private:
+  Float_t m_ADCPedHG[N_PHELP_SIPM];                                                                                                                                                                    
+  Float_t m_ADCPedLG[N_PHELP_SIPM];                                                                                                                                                                    
+  Float_t m_HGfromLG_q[N_PHELP_SIPM];                                                                                                                                                                
+  Float_t m_HGfromLG_m[N_PHELP_SIPM];                                                                                                                                                                
+  Float_t m_ADCtoGeV[N_PHELP_SIPM];  
+};
+
 struct DWCCalibration
 {
   std::array<double,4> DWC_sl, DWC_offs;
@@ -54,7 +77,8 @@ class PhysicsHelper
 
   PMTAuxCalibration * GetPMTAuxCalibration() {return &m_pmtcal;}
   DWCCalibration * GetDWCCalibration(){return &m_dwccal;}
-
+  SiPMCalibration * GetSiPMCalibration() {return &m_sipmcal;}
+  
   void Loop();
   
  private:
@@ -89,6 +113,8 @@ class PhysicsHelper
   PMTAuxCalibration m_pmtcal;
 
   DWCCalibration m_dwccal;
+
+  SiPMCalibration m_sipmcal;
 
 };
 
