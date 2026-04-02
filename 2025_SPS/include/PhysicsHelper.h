@@ -8,6 +8,8 @@
 #define N_PHELP_ADC 224
 #define N_PHELP_SIPM 1024
 #define N_PHELP_PMT 124
+#define N_PHELP_TDCS 48
+#define N_PHELP_BOARDS 16
 
 // stdl includes
 
@@ -91,20 +93,19 @@ class PhysicsHelper
 
   Int_t           m_eventNumber;
   Long64_t        m_triggerMask;
-  Int_t           m_TDCsval[48];
-  Int_t           m_ADCs[N_PHELP_ADC];
+  std::array<Int_t,N_PHELP_TDCS> m_TDCsval;
+  std::array<Int_t,N_PHELP_ADC> m_ADCs;
 
-  Double_t        m_BoardTimeStamps[16];
-  Short_t         m_SiPM_HG[N_PHELP_SIPM];
-  Short_t         m_SiPM_LG[N_PHELP_SIPM];
+  std::array<Double_t, N_PHELP_BOARDS> m_BoardTimeStamps;
+  std::array<Short_t,N_PHELP_SIPM> m_SiPM_HG;
+  std::array<Short_t,N_PHELP_SIPM> m_SiPM_LG;
+  std::array<Float_t,N_PHELP_ADC> m_ADCs_ped;
 
-  Float_t m_ADCs_ped[N_PHELP_ADC];
+  std::array<Float_t,N_PHELP_PMT> m_PMT;
+  std::array<Float_t,N_PHELP_SIPM> m_SiPM;
 
-  Float_t m_PMT[N_PHELP_PMT];
-  Float_t m_SiPM[N_PHELP_SIPM];
-
-  Float_t m_SiPM_LG_ped[N_PHELP_SIPM];
-  Float_t m_SiPM_HG_ped[N_PHELP_SIPM];
+  std::array<Float_t,N_PHELP_SIPM> m_SiPM_LG_ped;
+  std::array<Float_t,N_PHELP_SIPM> m_SiPM_HG_ped;
   
   Float_t L02,L03,L04,L05;
   Float_t L07,L08,L09,L10;

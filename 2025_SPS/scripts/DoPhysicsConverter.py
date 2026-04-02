@@ -181,12 +181,10 @@ def main():
         
         outfile = ROOT.TFile(outfilename,"recreate")
         outfile.cd()
-        outtree_PMT = intree_PMT.CloneTree(-1)
-        outtree_SiPM = intree_SiPM.CloneTree(-1)
         outtree_metadata = intree_metadata.CloneTree(-1)
         outtree_physics = ROOT.TTree("Phys2025","Tree with merged and calibrated info from TB2025")
 
-        physHelp = ROOT.PhysicsHelper(int(fl),outtree_physics,outtree_PMT,outtree_SiPM)
+        physHelp = ROOT.PhysicsHelper(int(fl),outtree_physics,intree_PMT,intree_SiPM)
         physHelp.PrepareForRun()
         if physHelp.DeterminePMTAuxPedestals() is False:
             print("\033[31mProblems computing the PMT and AUX detectors pedestals\033[0m")
@@ -238,10 +236,10 @@ def main():
         #PMTCal.Print()
         physHelp.Loop()
 
-        outtree_PMT.Write()
-        outtree_SiPM.Write()
+#        outtree_PMT.Write()
+#        outtree_SiPM.Write()
         outtree_metadata.Write()
-        outtree_physics.Write()
+        outtree_physics.Write("",ROOT.TObject.kOverwrite)
         outfile.Close()
         
         #ROOT.PhysicsConverter(fl, par.rawdatapath+ '/',calFile,par.doCalibration, par.useLocalPedestals)

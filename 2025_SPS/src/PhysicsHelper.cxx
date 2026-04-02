@@ -94,28 +94,22 @@ bool PhysicsHelper::PrepareForRun()
 
   m_PMTTree->SetBranchAddress("EventNumber", &m_eventNumber);
   m_PMTTree->SetBranchAddress("TriggerMask", &m_triggerMask);
-  m_PMTTree->SetBranchAddress("TDCsval", m_TDCsval);
-  m_PMTTree->SetBranchAddress("ADCs", m_ADCs);
+  m_PMTTree->SetBranchAddress("TDCsval", &m_TDCsval);
+  m_PMTTree->SetBranchAddress("ADCs", &m_ADCs);
 
+  m_SiPMTree->SetBranchAddress("BoardTimeStamps", &m_BoardTimeStamps);
+  m_SiPMTree->SetBranchAddress("SiPM_HG", &m_SiPM_HG);
+  m_SiPMTree->SetBranchAddress("SiPM_LG", &m_SiPM_LG);
 
-  m_SiPMTree->SetBranchAddress("BoardTimeStamps", m_BoardTimeStamps);
-  m_SiPMTree->SetBranchAddress("SiPM_HG", m_SiPM_HG);
-  m_SiPMTree->SetBranchAddress("SiPM_LG", m_SiPM_LG);
-
-
-  
-  tmp_str = "PMT[";
-  tmp_str += N_PHELP_PMT;
-  tmp_str += "]/F";
-  m_newTree->Branch("PMT", m_PMT, tmp_str);
-
-  tmp_str = "SiPM[";
-  tmp_str += N_PHELP_SIPM;
-  tmp_str += "]/F";
-
-  m_newTree->Branch("SiPM", m_SiPM, tmp_str);
+  m_newTree->Branch("PMT", &m_PMT);
+  m_newTree->Branch("SiPM", &m_SiPM);
+  m_newTree->Branch("BoardTimeStamps", &m_BoardTimeStamps);
+  m_newTree->Branch("SIPM_HG",&m_SiPM_HG);
+  m_newTree->Branch("SIPM_LG",&m_SiPM_LG);
+  m_newTree->Branch("TDCsval",&m_TDCsval);
   m_newTree->Branch("EventNumber",&m_eventNumber,"EventNumber/I");
   m_newTree->Branch("TriggerMask",&m_triggerMask,"TriggerMask/I");
+
   m_newTree->Branch("L02", &L02, "L02/F");
   m_newTree->Branch("L03", &L03, "L03/F");
   m_newTree->Branch("L04", &L04, "L04/F");
@@ -139,14 +133,21 @@ bool PhysicsHelper::PrepareForRun()
   m_eventNumber = 0;
   m_triggerMask = 0;
 
-  std::fill(m_ADCs, m_ADCs + N_PHELP_ADC, Int_t(0));
+  m_ADCs.fill(0.);
+  m_SiPM_HG.fill(0.);
+  m_SiPM_LG.fill(0.);
+  m_PMT.fill(0.);
+  m_SiPM.fill(0.);
+  m_SiPM_LG_ped.fill(0.);
+  m_SiPM_HG_ped.fill(0.);
+  /*  std::fill(m_ADCs, m_ADCs + N_PHELP_ADC, Int_t(0));
   std::fill(m_SiPM_HG, m_SiPM_HG + N_PHELP_SIPM,Short_t(0));
   std::fill(m_SiPM_LG, m_SiPM_LG + N_PHELP_SIPM,Short_t(0));
   std::fill(m_PMT, m_PMT + N_PHELP_PMT,Float_t(0));
   std::fill(m_SiPM, m_SiPM + N_PHELP_SIPM,Float_t(0));
   std::fill(m_SiPM_LG_ped, m_SiPM_LG_ped + N_PHELP_SIPM,Float_t(0));
   std::fill(m_SiPM_HG_ped, m_SiPM_HG_ped + N_PHELP_SIPM,Float_t(0));
-  
+  */
   return true;
 }
 
