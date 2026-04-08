@@ -12,15 +12,15 @@ find_package(ROOT REQUIRED COMPONENTS Core RIO Tree)
 
 # Public headers you want in the dictionary (adjust as needed)
 set(PUBLIC_HEADERS
-    ${PROJECT_SOURCE_DIR}/include/SiPMDecoder.h
-    ${PROJECT_SOURCE_DIR}/include/FileInfo.h
-    ${PROJECT_SOURCE_DIR}/include/SiPMEventFragment.h
-    ${PROJECT_SOURCE_DIR}/include/SiPMEvent.h
-    ${PROJECT_SOURCE_DIR}/include/hardcoded.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/SiPMDecoder.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/FileInfo.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/SiPMEventFragment.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/SiPMEvent.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/hardcoded.h
 )
 
 # Sources
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cxx)
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)
 
 # Generate ROOT dictionary for PyROOT/Cling autoloading
 # Requires a LinkDef.h (template below)
@@ -35,7 +35,7 @@ add_library(${PROJECT_NAME} SHARED ${SRC} ${DICT_NAME})
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
@@ -45,9 +45,9 @@ target_link_libraries(${PROJECT_NAME}
 
 # Keep outputs together so PyROOT can load them easily
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
-    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 # (Optional) install rules
@@ -61,8 +61,8 @@ install(FILES ${PUBLIC_HEADERS} DESTINATION include)
 # (Optional) install PCM/rootmap if your ROOT version emits them separately
 # They’re created next to the library/dict at build time.
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/${DICT_NAME}_rdict.pcm
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.rootmap
+    ${CMAKE_CURRENT_BINARY_DIR}/lib${DICT_NAME}_rdict.pcm
+    ${CMAKE_CURRENT_BINARY_DIR}/lib${PROJECT_NAME}.rootmap
     DESTINATION lib
     OPTIONAL
 )
