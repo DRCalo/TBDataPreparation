@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import glob
-import os
+import os, shutil 
 import argparse
 import re
 import ROOT
@@ -25,7 +25,7 @@ def returnRunNumber(x: str) -> str:
 
     m = re.search(r".*run([0-9]+)\.root*",x)
 
-    return m.group(1)
+    return m.group(1).lstrip('0')
 
 
 def main():
@@ -178,6 +178,8 @@ def main():
         intree_SiPM = infile.Get("SiPM_rawTree_aligned")
         intree_metadata = infile.Get("RunMetaData")
 
+        print ("\n\n Run " + str(fl) + ' contains ' + str(intree_PMT.GetEntries()) + ' events. \n\n')
+
         
         outfile = ROOT.TFile(outfilename,"recreate")
         outfile.cd()
@@ -236,16 +238,11 @@ def main():
         #PMTCal.Print()
         physHelp.Loop()
 
-#        outtree_PMT.Write()
-#        outtree_SiPM.Write()
         outtree_metadata.Write()
         outtree_physics.Write("",ROOT.TObject.kOverwrite)
         outfile.Close()
-        
-        #ROOT.PhysicsConverter(fl, par.rawdatapath+ '/',calFile,par.doCalibration, par.useLocalPedestals)
-        
-        cmnd2 = "mv physics_sps2024_run"+fl+".root "+phspath  ### Really careful here!
-        #os.system(cmnd2)
+
+        shutil.move(outfilename,par.ntuplepath + '/' + outfilename)
 
     if not mrgfls:
         print( "No new files found.")

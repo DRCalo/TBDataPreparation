@@ -107,28 +107,29 @@ bool PhysicsHelper::PrepareForRun()
   m_newTree->Branch("SIPM_HG",&m_SiPM_HG);
   m_newTree->Branch("SIPM_LG",&m_SiPM_LG);
   m_newTree->Branch("TDCsval",&m_TDCsval);
-  m_newTree->Branch("EventNumber",&m_eventNumber,"EventNumber/I");
-  m_newTree->Branch("TriggerMask",&m_triggerMask,"TriggerMask/I");
+  m_newTree->Branch("ADCs",&m_ADCs);
+  m_newTree->Branch("EventNumber",&m_eventNumber);
+  m_newTree->Branch("TriggerMask",&m_triggerMask);
 
-  m_newTree->Branch("L02", &L02, "L02/F");
-  m_newTree->Branch("L03", &L03, "L03/F");
-  m_newTree->Branch("L04", &L04, "L04/F");
-  m_newTree->Branch("L05", &L05, "L05/F");
-  m_newTree->Branch("L07", &L07, "L07/F");
-  m_newTree->Branch("L08", &L08, "L08/F");
-  m_newTree->Branch("L09", &L09, "L09/F");
-  m_newTree->Branch("L10", &L10, "L10/F");
-  m_newTree->Branch("XDWC1", &XDWC1, "XDWC1/F");
-  m_newTree->Branch("XDWC2", &XDWC2, "XDWC2/F");
-  m_newTree->Branch("YDWC1", &YDWC1, "YDWC1/F");
-  m_newTree->Branch("YDWC2", &YDWC2, "YDWC2/F");
-  m_newTree->Branch("Veto", &Veto, "Veto/F");
-  m_newTree->Branch("PShower", &PShower, "PShower/F");
-  m_newTree->Branch("MCounter", &MCounter, "MCounter/F");
-  m_newTree->Branch("C1", &C1, "C1/F");
-  m_newTree->Branch("C2", &C2, "C2/F");
-  m_newTree->Branch("C3", &C3, "C3/F");
-  m_newTree->Branch("TailC", &TailC, "TailC/F");
+  m_newTree->Branch("L02", &L02);
+  m_newTree->Branch("L03", &L03);
+  m_newTree->Branch("L04", &L04);
+  m_newTree->Branch("L05", &L05);
+  m_newTree->Branch("L07", &L07);
+  m_newTree->Branch("L08", &L08);
+  m_newTree->Branch("L09", &L09);
+  m_newTree->Branch("L10", &L10);
+  m_newTree->Branch("XDWC1", &XDWC1);
+  m_newTree->Branch("XDWC2", &XDWC2);
+  m_newTree->Branch("YDWC1", &YDWC1);
+  m_newTree->Branch("YDWC2", &YDWC2);
+  m_newTree->Branch("Veto", &Veto);
+  m_newTree->Branch("PShower", &PShower);
+  m_newTree->Branch("MCounter", &MCounter);
+  m_newTree->Branch("C1", &C1);
+  m_newTree->Branch("C2", &C2);
+  m_newTree->Branch("C3", &C3);
+  m_newTree->Branch("TailC", &TailC);
    
   m_eventNumber = 0;
   m_triggerMask = 0;
@@ -190,6 +191,11 @@ bool PhysicsHelper::DeterminePMTAuxPedestals(unsigned int l_option)
       }
     }
 
+    if (nped == 0){
+      std::cerr << "\n\n\n \033[33mWarning: the number of pedestal events used to estimate the PMT and aux pedestals is zero. The pedestal cannot be evaluated." << std::endl;
+      return true;
+    }
+    
     if (nped < 50){
       std::cerr << "\n\n\n \033[33mWarning: the number of pedestal events used to estimate the PMT and aux pedestals is low: nped = " << nped << " \033[0m\n\n\n" << std::endl;
     }
@@ -309,7 +315,7 @@ void PhysicsHelper::Loop()
 {
   Long64_t nentries = m_PMTTree->GetEntries();
   for (Long64_t ev = 0; ev < nentries; ++ev) {// Loop to get the pedestal events
-    if (ev % 1000 == 0) std::cout << ev << " events processed" << std::endl;
+    if (ev % 10000 == 0) std::cout << ev << " events processed" << std::endl;
     m_PMTTree->GetEntry(ev);
     m_SiPMTree->GetEntry(ev);
     if (!CalibratePMTAux() || !CalibrateDWC() || !CalibrateSiPMs()){
