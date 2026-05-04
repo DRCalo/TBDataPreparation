@@ -96,16 +96,32 @@ bool PhysicsHelper::PrepareForRun()
   m_PMTTree->SetBranchAddress("TriggerMask", &m_triggerMask);
   m_PMTTree->SetBranchAddress("TDCsval", &m_TDCsval);
   m_PMTTree->SetBranchAddress("ADCs", &m_ADCs);
+  m_PMTTree->SetBranchAddress("EventSpill", &m_EventSpill);
+  m_PMTTree->SetBranchAddress("EventTime", &m_EventTime);
+  m_PMTTree->SetBranchAddress("NumOfPhysEv", &m_NumOfPhysEv);
+  m_PMTTree->SetBranchAddress("NumOfPedeEv", &m_NumOfPedeEv);
+  m_PMTTree->SetBranchAddress("NumOfSpilEv", &m_NumOfSpilEv);
+  m_PMTTree->SetBranchAddress("TDCscheck", &m_TDCscheck);
 
   m_SiPMTree->SetBranchAddress("BoardTimeStamps", &m_BoardTimeStamps);
   m_SiPMTree->SetBranchAddress("SiPM_HG", &m_SiPM_HG);
   m_SiPMTree->SetBranchAddress("SiPM_LG", &m_SiPM_LG);
+  m_SiPMTree->SetBranchAddress("SiPM_ToA", &m_SiPM_ToA);
+  m_SiPMTree->SetBranchAddress("SiPM_ToT", &m_SiPM_ToT);
 
   m_newTree->Branch("PMT", &m_PMT);
   m_newTree->Branch("SiPM", &m_SiPM);
   m_newTree->Branch("BoardTimeStamps", &m_BoardTimeStamps);
-  m_newTree->Branch("SIPM_HG",&m_SiPM_HG);
-  m_newTree->Branch("SIPM_LG",&m_SiPM_LG);
+  m_newTree->Branch("SiPM_HG",&m_SiPM_HG);
+  m_newTree->Branch("SiPM_LG",&m_SiPM_LG);
+  m_newTree->Branch("SiPM_ToA", &m_SiPM_ToA);
+  m_newTree->Branch("SiPM_ToT", &m_SiPM_ToT);
+  m_newTree->Branch("EventSpill", &m_EventSpill);
+  m_newTree->Branch("EventTime", &m_EventTime);
+  m_newTree->Branch("NumOfPhysEv", &m_NumOfPhysEv);
+  m_newTree->Branch("NumOfPedeEv", &m_NumOfPedeEv);
+  m_newTree->Branch("NumOfSpilEv", &m_NumOfSpilEv);
+  m_newTree->Branch("TDCscheck", &m_TDCscheck);
   m_newTree->Branch("TDCsval",&m_TDCsval);
   m_newTree->Branch("ADCs",&m_ADCs);
   m_newTree->Branch("EventNumber",&m_eventNumber);

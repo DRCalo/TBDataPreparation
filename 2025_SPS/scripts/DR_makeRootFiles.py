@@ -285,7 +285,9 @@ def doRun(runnumber,outfilename):
     if not DreamDaq_rootifier.ReadandRoot():
         print("Cannot rootify file " + inputDaqFileName)
         return False
-
+    
+#    DreamDaq_rootifier.Write()
+#    return True
     ##### and now merge
     retval = CreateBlendedFile(SiPMTree,EventInfoTree,DreamDaq_rootifier.tbtree,outfilename)
     t_SiPMRootFile.Close()
@@ -295,7 +297,9 @@ def doRun(runnumber,outfilename):
     if os.path.isfile("temp.root"):
         os.remove("temp.root")
     
-    return retval 
+    return retval
+
+    
     
 
 def GetNewRuns():

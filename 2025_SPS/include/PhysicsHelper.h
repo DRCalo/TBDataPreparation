@@ -94,11 +94,21 @@ class PhysicsHelper
   Int_t           m_eventNumber;
   Long64_t        m_triggerMask;
   std::array<Int_t,N_PHELP_TDCS> m_TDCsval;
+  std::array<Int_t,N_PHELP_TDCS> m_TDCscheck;
   std::array<Int_t,N_PHELP_ADC> m_ADCs;
+  Int_t           m_EventSpill;
+  Long64_t        m_EventTime;
+  Int_t           m_NumOfPhysEv;
+  Int_t           m_NumOfPedeEv;
+  Int_t           m_NumOfSpilEv;
+  
 
   std::array<Double_t, N_PHELP_BOARDS> m_BoardTimeStamps;
   std::array<Short_t,N_PHELP_SIPM> m_SiPM_HG;
   std::array<Short_t,N_PHELP_SIPM> m_SiPM_LG;
+  std::array<Float_t,N_PHELP_SIPM> m_SiPM_ToA;
+  std::array<Float_t,N_PHELP_SIPM> m_SiPM_ToT;
+
   std::array<Float_t,N_PHELP_ADC> m_ADCs_ped;
 
   std::array<Float_t,N_PHELP_PMT> m_PMT;
