@@ -27,7 +27,8 @@ FileInfo::FileInfo():
     m_acqTime(0),
     m_inputfile(NULL),
     m_filename(""),
-    m_filesize(0)
+    m_filesize(0),
+    m_eventBuildingMode(1)
     {}
 
 bool FileInfo::OpenFile(std::string filename)
@@ -160,25 +161,33 @@ bool FileInfo::ReadHeader()
     return true;
 }
 
-bool FileInfo::BuildTrigIDMap()
+bool FileInfo::BuildIndexMap()
 {
     std::streampos initialPos = m_inputfile.tellg();
+
+
+    long l_index = 0;
     
      while (m_inputfile.good()){
         if (m_inputfile.peek() == EOF) {
             logging("End of file reached",Verbose::kInfo);
             break;
-        }   
+        }
+	if (m_eventBuildingMode == 1){
+	  l_index = this->GetNextTriggerID();
+	} else if (m_eventBuildingMode == 2){
+	  l_index = this->GetNextTimeStamp();
+	}
         std::streampos currentPos = m_inputfile.tellg();
-        if (m_index.find(this->GetNextTriggerID()) != m_index.end()){
+        if (m_index.find(l_index) != m_index.end()){
             // TrigID already there
-            m_index[this->GetNextTriggerID()].push_back(static_cast<std::uint64_t>(currentPos));
+            m_index[l_index].push_back(static_cast<std::uint64_t>(currentPos));
         } else {
             // not yet there
             std::vector<std::uint64_t> l_vec;
             l_vec.reserve(64);
             l_vec.push_back(static_cast<std::uint64_t>(currentPos));
-            m_index[this->GetNextTriggerID()] = l_vec;
+            m_index[l_index] = l_vec;
         }
         // Now advance to the next event
         m_inputfile.seekg(GetEventSize(), std::ios::cur);
@@ -226,7 +235,7 @@ long FileInfo::GetNextTriggerID()
     // we will have a trigger ID - use that to collect all boards related to this event. 
     // Now get it and then rewind the event to current position
 
-    // Move forward 3 bytes from here
+    // Move forward 11 bytes from here
     m_inputfile.seekg(currentPos + std::streamoff(11));
     if (!m_inputfile.good()) {
         m_inputfile.clear(); // restore state in case of failure
@@ -236,11 +245,45 @@ long FileInfo::GetNextTriggerID()
     // Read the 8-byte number
     m_inputfile.read(reinterpret_cast<char*>(&l_triggerID), sizeof(l_triggerID));
     // Restore the original position
-    m_inputfile.seekg(currentPos);
-    
+    m_inputfile.seekg(currentPos);    
 
     return static_cast<long>(l_triggerID);
 
+}
+
+long FileInfo::GetNextTimeStamp()
+{
+  
+    // This function tries to access the next event fragment and read the timestamp. 
+    // It restore the current position in the ifstream. 
+    // It returns a negative value in case it reaches the end of file. 
+    // It assumes that the file is presented with the position at the beginning of an event fragment
+
+    std::streampos currentPos = m_inputfile.tellg();
+    if (currentPos == -1)  // invalid position (e.g. already at EOF)
+        return -1;
+
+    double l_timestamp = 0;
+
+
+    // we will have a time stamp rounded at 10 mus - use that to collect all boards related to this event. 
+    // Now get it and then rewind the event to current position
+
+    // Move forward 3 bytes from here
+    m_inputfile.seekg(currentPos + std::streamoff(3));
+    if (!m_inputfile.good()) {
+        m_inputfile.clear(); // restore state in case of failure
+        m_inputfile.seekg(currentPos);
+        return -1;
+    }
+    // Read the 8-byte number
+    m_inputfile.read(reinterpret_cast<char*>(&l_timestamp), sizeof(l_timestamp));
+    // Restore the original position
+    m_inputfile.seekg(currentPos);
+
+    // timestamp is read in mus. Do a division and cast the result to get an index with a resolution of 10 mus
+
+    return static_cast<long>(l_timestamp/10);
 }
 
 uint16_t FileInfo::GetEventSize()
@@ -317,3 +360,14 @@ bool FileInfo::ReadTrigID(long trigID, SiPMEvent & l_event)
 
     return true;
 }
+
+void FileInfo::SetEventBuildingMode(unsigned int l_eventBuildingMode)                                                
+{
+  if (l_eventBuildingMode == 1 || l_eventBuildingMode == 2){
+    m_eventBuildingMode = l_eventBuildingMode;
+  } else {
+    logging("Event Building mode" + std::to_string(l_eventBuildingMode) + " unknown", Verbose::kError);
+    logging("Known modes are 1 - TrigID and 2 - timestamp", Verbose::kError);
+    logging("Leaving default " + std::to_string(l_eventBuildingMode), Verbose::kError);
+  }
+}                            

@@ -53,11 +53,13 @@ def getFiles(forceAll):
                     files.append(filename)
     return files
 
-def runConversion(ifname,ofname,doEventBuilding=True):
+def runConversion(ifname,ofname,doEventBuilding=True,eventBuildMode=1):
     print('\n\n')
     global bad_processing
     checkProcess = True
     myDecoder = ROOT.SiPMDecoder()
+    myDecoder.SetDoEventBuilding(doEventBuilding)
+    myDecoder.SetEventBuildingMode(int(eventBuildMode))
     global verbosityLevel
     myDecoder.SetVerbosity(verbosityLevel)
    
@@ -82,7 +84,7 @@ def runConversion(ifname,ofname,doEventBuilding=True):
         return 
 
 
-    checkProcess = myDecoder.Read(doEventBuilding)
+    checkProcess = myDecoder.Read()
 
     if not checkProcess:
         bad_processing.append(ifname)
@@ -91,14 +93,14 @@ def runConversion(ifname,ofname,doEventBuilding=True):
     
 
 
-def convertAll(fnames,doEventBuilding = True):
+def convertAll(fnames,doEventBuilding = True, eventBuildingMode=1):
     global skipRun
     for filename in fnames:
         if getRunNumber(filename) in  skipRun:
             continue
         tempOutFileName = "temp_output_" + getRunNumber(filename) + ".root"
         print ("\n\nA temporary output file with name " + tempOutFileName + " will be opened and then renamed at the end of the processing.")
-        runConversion(filename, tempOutFileName, doEventBuilding)
+        runConversion(filename, tempOutFileName, doEventBuilding,eventBuildingMode)
         shutil.move(tempOutFileName,correspondingOutputName(filename))
 
 
@@ -110,6 +112,8 @@ def main():
     parser.add_argument('-V', '--verbosityLevel', dest='verbosityLevel', default=3, help="Controls the verbosity level - Remember:  0=Quiet, 1=Error, 2=Warn, 3=Info, 4=Pedantic" )
     parser.add_argument('--forceAll', action='store_true',help='Forces reprocessing all files.')
     parser.add_argument('--noEventBuilding',action="store_true",help="Disables event building: one entry will correspond to one board")
+    parser.add_argument("-m","--eventBuildingMode",dest='eventBuildingMode',default=1, help='1 = use TrigID; 2 = use time stamp')
+    
     par  = parser.parse_args()
     global rawdataPath 
     rawdataPath = par.rawdataPath
@@ -123,7 +127,7 @@ def main():
     if os.path.isfile(rawdataPath):
         print("Processing a single file named " + rawdataPath)
         print("The output file will be output.root")
-        runConversion(rawdataPath,"output.root",doEventBuilding)
+        runConversion(rawdataPath,"output.root",doEventBuilding,par.eventBuildingMode)
     else:
 
         global skipRun
@@ -160,7 +164,7 @@ def main():
             print(toConvert)
             print ("\n\n")
 
-            convertAll(toConvert,doEventBuilding)
+            convertAll(toConvert,doEventBuilding,par.eventBuildingMode)
         else:
             print("No new file to be converted \n\n")
 

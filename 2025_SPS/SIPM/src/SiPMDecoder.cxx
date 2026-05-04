@@ -11,7 +11,8 @@
 SiPMDecoder::SiPMDecoder(std::string filename):
     m_outfile(NULL),
     m_metadata(NULL),
-    m_datatree(NULL)
+    m_datatree(NULL),
+    m_doEventBuilding(true)
 {
 
 }
@@ -95,7 +96,7 @@ bool SiPMDecoder::ReadFileHeader()
     return true;
 }
 
-bool SiPMDecoder::Read(bool doEventBuilding)
+bool SiPMDecoder::Read()
 {
     if (m_finfo.m_dataFormat.empty()){// The file header was not read
         logging("It appears that the input file header was not read. Doing it now.",Verbose::kWarn);
@@ -117,25 +118,24 @@ bool SiPMDecoder::Read(bool doEventBuilding)
     unsigned int eventCounter = 0;
     bool goodRead = false;
 
-    if (!doEventBuilding){
+    if (!m_doEventBuilding){
       logging("Event building is disabled - the output file will contain one board per entry",Verbose::kWarn);
     }
     
-    if (doEventBuilding){
-      
-      if (!m_finfo.BuildTrigIDMap()){ 
-        // Quickly scanning the input file and building the map of the trigIDs 
-        // and to what fragments they correspond
-        logging("Problem in building the trigID map", Verbose::kError);
-        return false;
+    if (m_doEventBuilding){
+      if (!m_finfo.BuildIndexMap()){ 
+	// Quickly scanning the input file and building the map of the trigIDs 
+	// and to what fragments they correspond
+	logging("Problem in building the trigID map", Verbose::kError);
+	return false;
       }
-    
+      
       if (g_getVerbosity() == Verbose::kPedantic){
-        m_finfo.PrintMap();
+	m_finfo.PrintMap();
       }
       
       for (const auto& pair : m_finfo.GetIndexMap()) {
-        // Now looping on the trigIDs and actually reading the events
+	// Now looping on the trigIDs and actually reading the events
 	try { 
 	  goodRead = m_finfo.ReadTrigID(pair.first,m_event);
 	} catch (const std::runtime_error& e) {
@@ -145,13 +145,13 @@ bool SiPMDecoder::Read(bool doEventBuilding)
 	  break;
 	}  
 	if (!goodRead) break; // stop processing in case of a bad read
-        // Once the event is built, fill the tree 
-        m_datatree->Fill();
+	// Once the event is built, fill the tree 
+	m_datatree->Fill();
 	if (eventCounter%10000 == 0){
 	  logging(std::to_string(eventCounter) + " events processed ", Verbose::kInfo);
 	}
 	++eventCounter;
-      }
+      } 
     } else { // do not even attempt to try event building, just read one event after the other
       while (m_finfo.InputFile()->peek() != EOF){
 
