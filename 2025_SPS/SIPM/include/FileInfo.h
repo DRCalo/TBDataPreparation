@@ -54,7 +54,7 @@ public:
   
   bool ReadEvent(SiPMEvent & l_event);
   bool ReadEventFragment(SiPMEvent & l_event);  
-  bool ReadTrigID(long trigID, SiPMEvent & l_event); // read all fragments corresponding to a given trigID and store them in the event
+  bool ReadIndex(long index, SiPMEvent & l_event); // read all fragments corresponding to a given index (either based on time stamp or trig ID)  and store them in the event
 
   long GetNextTriggerID(); // If the file is at the beginning of an event, peeks at the next trigID without changing the current position of the file
   long GetNextTimeStamp(); // If the file is at the beginning of an event, peeks at the next time stamp without changing the current position of the file  

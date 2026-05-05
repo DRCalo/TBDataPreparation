@@ -325,19 +325,18 @@ bool FileInfo::ReadEventFragment(SiPMEvent & l_event)
   return true;
 }
 
-bool FileInfo::ReadTrigID(long trigID, SiPMEvent & l_event)
+bool FileInfo::ReadIndex(long l_index, SiPMEvent & l_event)
 {
-    if (m_index.find(trigID) == m_index.end()){
-        logging("Cannot find trigger ID " + std::to_string(trigID) + " in m_index.", Verbose::kError);
+    if (m_index.find(l_index) == m_index.end()){
+        logging("Cannot find trigger ID " + std::to_string(l_index) + " in m_index.", Verbose::kError);
         return false;
     }
     l_event.Reset();
-    l_event.m_triggerID = trigID;
     
     static uint16_t fragmentCounter;
 
 
-    std::vector<std::uint64_t> & l_startingPoints = m_index[trigID];
+    std::vector<std::uint64_t> & l_startingPoints = m_index[l_index];
 
     for (uint64_t evIn : l_startingPoints){
         fragmentCounter = 0;
@@ -355,8 +354,9 @@ bool FileInfo::ReadTrigID(long trigID, SiPMEvent & l_event)
     // Compute the event-level timeStamp
 
     l_event.ComputeEventTimeStamp();
+    l_event.ComputeEventTrigID();
 
-    logging("triggerID " + std::to_string(trigID) + " Read " + std::to_string(fragmentCounter +1) + " boards",Verbose::kPedantic);
+    logging("Index " + std::to_string(l_index) + " Read " + std::to_string(fragmentCounter +1) + " boards",Verbose::kPedantic);
 
     return true;
 }

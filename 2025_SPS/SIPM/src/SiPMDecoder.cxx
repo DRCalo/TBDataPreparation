@@ -59,6 +59,7 @@ bool SiPMDecoder::OpenOutput(std::string filename)
 
     m_datatree->Branch("TrigID",&m_event.m_triggerID);
     m_datatree->Branch("BoardTimeStamps",&m_event.m_timeStamps);
+    m_datatree->Branch("BoardTrigID",&m_event.m_boardTrigID);
     m_datatree->Branch("EventTimeStamp",&m_event.m_evTimeStamp);  
     m_datatree->Branch("SiPM_HG",&m_event.m_HG);  
     m_datatree->Branch("SiPM_LG",&m_event.m_LG);  
@@ -137,7 +138,7 @@ bool SiPMDecoder::Read()
       for (const auto& pair : m_finfo.GetIndexMap()) {
 	// Now looping on the trigIDs and actually reading the events
 	try { 
-	  goodRead = m_finfo.ReadTrigID(pair.first,m_event);
+	  goodRead = m_finfo.ReadIndex(pair.first,m_event);
 	} catch (const std::runtime_error& e) {
 	  logging(e.what(),Verbose::kError);	
 	  logging("Cannot correctly read fragments in TrigID " + std::to_string(pair.first),Verbose::kError);

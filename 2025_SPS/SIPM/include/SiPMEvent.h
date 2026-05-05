@@ -32,7 +32,9 @@ public:
   bool ReadEventFragment(const std::vector<char> & l_data, AcquisitionMode l_acqMode,int l_timeUnit,float l_conversion);
   long m_triggerID;
   std::array<double,MAX_BOARDS> m_timeStamps; // the timestamp of each board
+  std::array<long,MAX_BOARDS> m_boardTrigID; // the timestamp of each board
   void ComputeEventTimeStamp(); // compute m_evTimeStamp
+  void ComputeEventTrigID(); // compute m_evTimeStamp
   double m_evTimeStamp; // the timestamp of the event. Equal to the timestamp of the boars if tehy are all the same, -1 if they are not.
 
         
