@@ -91,58 +91,22 @@ void SiPMEvent::ComputeEventTimeStamp()
 
 void SiPMEvent::ComputeEventTrigID()
 {
-  // If we are building the event based on the event time stamp, then there is no unique trigID (in principle) for the event. Define the event level trigID as the most "voted"
+  // If we are building the event based on the event time stamp, then there is no unique trigID (in principle) for the event. Define the event level trigID as the minimum in the event (as far as we know, TrigID can be artificially one unit too large, but we have never observed a case where the TrigID is too small, so, when reassempling by time stamp, one may only end up with boards with a too large TrigID
 
+  static long minTrigID;
+  minTrigID = 100000000000; // something large. 
     
-  std::unordered_map<long,int> counts;  
-
   for (auto trigID : m_boardTrigID){
-    if (trigID > 0){
-      if (counts.find(trigID) != counts.end()){
-	counts[trigID] = 1+counts[trigID];
-      } else {
-	counts[trigID] = 1;
+    if (trigID > 0){ // the board is read
+      if (trigID < minTrigID){
+	minTrigID = trigID;
       }
     }
   }
-
-  if (counts.size() == 1) {// exactly what you want. Set the trigID ask the key
-    auto it = counts.begin();
-    m_triggerID = it->first;
-  }
   
-  /*  static int maxcounts;
-  maxcounts = -1;
-  static long candTrigID;
-  candTrigID = -1;
-  
-  for (const auto& [key, value] : counts) {
-    std::cout << "counts[" << key << "] = " << value << ". maxcounts = " << maxcounts <<  std::endl;
-    if (value > maxcounts){
-      maxcounts = value;
-      candTrigID = key;
-      std::cout << "Setting candTrigID to " << candTrigID << std::endl;
-    }
-  }
-
-  std::cout << "Candidate trigID " << candTrigID << std::endl;
-
-  // Second loop - check that the max trigID is unique
-
-  static unsigned int nMax;
-  nMax = 0;
-  
-  for (const auto& [key, value] : counts) {
-    if (value == maxcounts){
-      ++nMax; 
-    }
-  }
-
-  if (nMax > 1) logging("More than one trigID with equal occurrences, cannot decide on the event trigID, assigning " + std::to_string(candTrigID),Verbose::kWarn);
-  
-  m_triggerID = candTrigID;
-  std::cout << "In the end of the day, trigID = " << m_triggerID << std::endl;
-  */
+  m_triggerID = minTrigID;
 }
+  
+
 
   

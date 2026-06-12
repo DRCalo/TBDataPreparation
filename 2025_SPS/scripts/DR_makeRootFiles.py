@@ -1,4 +1,4 @@
-! /usr/bin/env python3
+#! /usr/bin/env python3
 
 import ROOT
 import os
@@ -25,7 +25,8 @@ EventInfoTreeName = "RunMetaData"
 EvtOffset = -1000
 doNotMerge = False
 
-
+NFERS=16
+NCHANPERFERS=64
 
 ####### main function to merge SiPM and PMT root files with names specified as arguments
     
@@ -82,22 +83,26 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
 
     newtree = ROOT.TTree("SiPM_rawTree_aligned", "Aligned SiPM data")
 
+    NSIPMS = NFERS*NCHANPERFERS
+    
     # Variabili/branches (uguali a quelli originali)
     TrigID = np.zeros(1, dtype=np.int32)
-    BoardTimeStamps = np.zeros(16, dtype=np.float64)
+    BoardTimeStamps = np.zeros(NFERS, dtype=np.float64)
+    BoardTrigID = np.zeros(NFERS,dtype=np.int64)
     EventTimeStamp = np.zeros(1, dtype=np.float64)
-    SiPM_HG = np.zeros(1024, dtype=np.int16)
-    SiPM_LG = np.zeros(1024, dtype=np.int16)
-    SiPM_ToA = np.zeros(1024, dtype=np.float32)
-    SiPM_ToT = np.zeros(1024, dtype=np.float32)
+    SiPM_HG = np.zeros(NSIPMS, dtype=np.int16)
+    SiPM_LG = np.zeros(NSIPMS, dtype=np.int16)
+    SiPM_ToA = np.zeros(NSIPMS, dtype=np.float32)
+    SiPM_ToT = np.zeros(NSIPMS, dtype=np.float32)
 
     newtree.Branch("TrigID", TrigID, "TrigID/I")
-    newtree.Branch("BoardTimeStamps", BoardTimeStamps, "BoardTimeStamps[16]/D")
+    newtree.Branch("BoardTimeStamps", BoardTimeStamps, "BoardTimeStamps[" + str(NFERS) + "]/D")
+    newtree.Branch("BoardTrigID", BoardTrigID, "BoardTreigID[" + str(NFERS)+ "]/L")
     newtree.Branch("EventTimeStamp", EventTimeStamp, "EventTimeStamp/D")
-    newtree.Branch("SiPM_HG", SiPM_HG, "SiPM_HG[1024]/S")
-    newtree.Branch("SiPM_LG", SiPM_LG, "SiPM_LG[1024]/S")
-    newtree.Branch("SiPM_ToA", SiPM_ToA, "SiPM_ToA[1024]/F")
-    newtree.Branch("SiPM_ToT", SiPM_ToT, "SiPM_ToT[1024]/F")
+    newtree.Branch("SiPM_HG", SiPM_HG, "SiPM_HG[" + str(NSIPMS) + "]/S")
+    newtree.Branch("SiPM_LG", SiPM_LG, "SiPM_LG[" + str(NSIPMS) + "]/S")
+    newtree.Branch("SiPM_ToA", SiPM_ToA, "SiPM_ToA[" + str(NSIPMS) + "]/F")
+    newtree.Branch("SiPM_ToT", SiPM_ToT, "SiPM_ToT[" + str(NSIPMS) + "]/F")
 
     # ---- loop sugli eventi del tree principale CERNSPS2025 ----
     for i, ev in enumerate(newDaqInputTree):
@@ -109,6 +114,7 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
         if entry_bytes > 0: ## event found 
             TrigID[0] = SiPMInputTree.TrigID
             BoardTimeStamps[:] = SiPMInputTree.BoardTimeStamps
+            BoardTrigID[:] = SiPMInputTree.BoardTrigID
             EventTimeStamp[0] = SiPMInputTree.EventTimeStamp
             SiPM_HG[:] = SiPMInputTree.SiPM_HG
             SiPM_LG[:] = SiPMInputTree.SiPM_LG
@@ -118,6 +124,7 @@ def CreateBlendedFile(SiPMInputTree,EventInfoTree,DaqInputTree,outputfilename):
         else: ## the event was not found, either because not written or because candTrigID was negative (more event in Daq file 
             TrigID[0] = -1
             BoardTimeStamps[:] = 0
+            BoardTrigID[:] = -1
             EventTimeStamp[0] = -1
             SiPM_HG[:] = 0
             SiPM_LG[:] = 0
@@ -182,11 +189,11 @@ def DetermineOffset(SiPMTree,DAQTree):
     for p2 in TrigIdComplement:
         xsipm.append(p2)
         ysipm.append(1)
-    hist = ROOT.TH1I("histo","histo",100, 0, 100)
+    hist = ROOT.TH1I("h_pedestalEvents","histo",100, 0, 100)
     for i in np.diff(sorted(list(pedList))):
         hist.Fill(i)
     hist.Write()
-    hist2 = ROOT.TH1I("histo2","histo2",100,0,100)
+    hist2 = ROOT.TH1I("h_missingSiPM","histo2",100,0,100)
     for i in np.diff(sorted(list(TrigIdComplement))):
         hist2.Fill(i)
     hist2.Write()
@@ -196,12 +203,14 @@ def DetermineOffset(SiPMTree,DAQTree):
     y_ptr = ctypes.cast(y_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
     graph = ROOT.TGraph(len(x_array),x_ptr,y_ptr)
     graph.SetTitle( "pedList; EventNumber; 2" )
+    graph.SetName("pedlist")
     xsipm_array = array('d',xsipm)
     ysipm_array = array('d',ysipm)
     xsipm_ptr = ctypes.cast(xsipm_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
     ysipm_ptr = ctypes.cast(ysipm_array.buffer_info()[0], ctypes.POINTER(ctypes.c_double))
     graph2 = ROOT.TGraph(len(xsipm),xsipm_ptr,ysipm_ptr)
     graph2.SetTitle( "SiPM no trigger; EventNumber; 1" )
+    graph2.SetName("sipm_noTrigger")
     graph2.SetMarkerStyle(6)
     graph2.SetMarkerColor(ROOT.kRed)
     graph.SetMarkerStyle(6)
@@ -233,11 +242,12 @@ def DetermineOffset(SiPMTree,DAQTree):
     graph3 = ROOT.TGraph(len(scanned_offset),scanned_offset,scanned_diffLen)
     graph3.SetMarkerStyle(6)
     graph3.SetTitle( "offset scan; offset; diffLength" )
+    graph3.SetName("offset_scan")
     graph3.Write()
 
     return minOffset
 
-def doRun(runnumber,outfilename):
+def doRun(runnumber,outfilename,l_evBuildMode):
     inputDaqFileName = DaqFileDir + "/sps2025_run" + str(runnumber) + ".txt.bz2"
     inputSiPMFileName = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.dat"
     tmpSiPMRootFile = SiPMFileDir + "/Run" + str(runnumber) + ".0_list.root"
@@ -252,7 +262,7 @@ def doRun(runnumber,outfilename):
 
     print ('Running data conversion (binary to SiPM on ' + inputSiPMFileName)
 
-    SiPMConvert.runConversion(inputSiPMFileName,tmpSiPMRootFile)
+    SiPMConvert.runConversion(inputSiPMFileName,tmpSiPMRootFile,True,l_evBuildMode)
 #    p = subprocess.Popen(["dataconverter", inputSiPMFileName])
 #    p.wait()
 #    if p.returncode < 0: 
@@ -375,11 +385,12 @@ def main():
     and tries to guess which new files are there and merge them. \n \
     Otherwise, the user needs to provide --runNumber to run on an individual run. \
     If a file names exclude_runs.csv containing a comma-separated list of run numbers is in the current directory, those runs will be skipped.\n \
-    The script will produce a bad_run_list.csv file containing teh list of runs where the rootification failed.')
+    The script will produce a bad_run_list.csv file containing teh list of runs where the rootification failed.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--output', dest='outputFileName',default='output.root',help='Output file name')
     parser.add_argument('--no_merge', dest='no_merge',action='store_true',help='Do not do the merging step')           
     parser.add_argument('--runNumber',dest='runNumber',default='0', help='Specify run number. The output file name will be merged_sps2023_run[runNumber].root ')
     parser.add_argument('--newFiles',dest='newFiles',action='store_true', default=False, help='Looks for new runs in ' + SiPMFileDir + ' and ' + DaqFileDir + ', and merges them. To be used ONLY from the ideadr account on lxplus')
+    parser.add_argument('--evBuildingMode',dest='evBuildMode', default=2, help='1: build events based on FERS TrigID; 2: build events based on FERS time stamp.')
     parser.add_argument("--newRunsList",dest='newRunsList',action='store_true', default=False, help='Only produce a list of new runs to be processed in runs.list') 
     
     par  = parser.parse_args()
@@ -405,7 +416,7 @@ def main():
             print( '\n\nGoing to merge run ' + runNumber + ' and the output file will be ' + outfilename + '\n\n'  )
 
 #            allgood = True
-            allgood = doRun(runNumber, outfilename)
+            allgood = doRun(runNumber, outfilename,par.evBuildMode)
             if not allgood: 
                 bad_run_list.add(runNumber)
         for run in bad_run_list:
@@ -417,7 +428,7 @@ def main():
     if par.runNumber != '0':
         print( 'Looking for run number ' + par.runNumber)
         outfilename = par.outputFileName 
-        allGood = doRun(par.runNumber,outfilename)
+        allGood = doRun(par.runNumber,outfilename,par.evBuildMode)
 
     if allGood != 0:
         print( 'Something went wrong. Please double check your options. If you are absolutely sure that the script should have worked, contact iacopo.vivarelli AT cern.ch')
